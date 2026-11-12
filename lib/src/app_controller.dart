@@ -1,0 +1,212 @@
+import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+
+import 'api_client.dart';
+import 'models.dart';
+
+enum AccessMode { signedOut, connected, demo }
+
+class AppController extends ChangeNotifier {
+  AppController({ApiClient? api}) : api = api ?? ApiClient();
+
+  final ApiClient api;
+  AccessMode accessMode = AccessMode.signedOut;
+  UserProfile profile = const UserProfile(name: 'Mi cuenta', email: '');
+  ReminderSettings reminders = const ReminderSettings();
+  ExchangeRates rates = const ExchangeRates();
+  List<Subscription> subscriptions = const [];
+  double? serverMonthlyTotal;
+  bool busy = false;
+  String? error;
+
+  bool get connected => accessMode == AccessMode.connected;
+  List<Subscription> get active => subscriptions.where((item) => item.active).toList();
+  double get monthlyTotal => serverMonthlyTotal ?? active.fold(0, (sum, item) => sum + item.monthlyPen(rates));
+
+  Future<void> initialize() async {
+    await api.initialize();
+    if (api.hasSession) {
+      accessMode = AccessMode.connected;
+      profile = UserProfile(name: _nameFromEmail(api.email), email: api.email);
+      await refresh(silent: true);
+    }
+  }
+
+  Future<void> authenticate(String email, String password, {required bool register}) async {
+    await _guard(() async {
+      final user = await api.authenticate(email, password, register: register);
+      profile = UserProfile(name: _nameFromEmail('${user['email']}'), email: '${user['email']}');
+      accessMode = AccessMode.connected;
+      await _loadRemote();
+    });
+  }
+
+  void enterDemo() {
+    final now = DateTime.now();
+    accessMode = AccessMode.demo;
+    profile = const UserProfile(name: 'Renzo Salazar', email: 'renzo.salazar@gmail.com', premium: true);
+    rates = const ExchangeRates();
+    subscriptions = [
+      Subscription(id: 'spotify', name: 'Spotify Premium', amount: 20.90, currency: Currency.pen, frequency: BillingFrequency.monthly, nextCharge: now.add(const Duration(days: 1)), category: SubscriptionCategory.musica),
+      Subscription(id: 'linkedin', name: 'LinkedIn Premium', amount: 39.99, currency: Currency.usd, frequency: BillingFrequency.monthly, nextCharge: now.add(const Duration(days: 4)), category: SubscriptionCategory.productividad, notes: '¿Lo sigo necesitando?'),
+      Subscription(id: 'max', name: 'Max', amount: 34.90, currency: Currency.pen, frequency: BillingFrequency.monthly, nextCharge: now.add(const Duration(days: 7)), category: SubscriptionCategory.streaming),
+      Subscription(id: 'smartfit', name: 'Smart Fit Black', amount: 129.90, currency: Currency.pen, frequency: BillingFrequency.monthly, nextCharge: now.add(const Duration(days: 10)), category: SubscriptionCategory.fitness, unusedSince: now.subtract(const Duration(days: 34))),
+      Subscription(id: 'youtube', name: 'YouTube Premium', amount: 25.90, currency: Currency.pen, frequency: BillingFrequency.monthly, nextCharge: now.add(const Duration(days: 13)), category: SubscriptionCategory.streaming),
+      Subscription(id: 'amazon', name: 'Amazon Prime', amount: 14.99, currency: Currency.usd, frequency: BillingFrequency.monthly, nextCharge: now.add(const Duration(days: 17)), category: SubscriptionCategory.streaming),
+      Subscription(id: 'pedidosya', name: 'PedidosYa Plus', amount: 14.90, currency: Currency.pen, frequency: BillingFrequency.monthly, nextCharge: now.add(const Duration(days: 22)), category: SubscriptionCategory.delivery),
+    ];
+    notifyListeners();
+  }
+
+  Future<void> refresh({bool silent = false}) async {
+    if (!connected) return;
+    if (silent) {
+      try {
+        await _loadRemote();
+      } catch (failure) {
+        error = '$failure';
+      }
+      notifyListeners();
+      return;
+    }
+    await _guard(_loadRemote);
+  }
+
+  Future<void> _loadRemote() async {
+    final me = await api.request('GET', '/api/v1/users/me');
+    final activeBody = await api.request('GET', '/api/v1/subscriptions?status=ACTIVE');
+    final cancelledBody = await api.request('GET', '/api/v1/subscriptions?status=CANCELLED');
+    final local = {for (final item in subscriptions) item.id: item};
+    final all = <Subscription>[];
+    for (final response in [activeBody, cancelledBody]) {
+      final items = (response['items'] as List? ?? const []);
+      all.addAll(items.map((item) {
+        final data = Map<String, dynamic>.from(item as Map);
+        return Subscription.fromApi(data, local: local['${data['id']}']);
+      }));
+    }
+    final quote = activeBody['exchangeRate'] as Map?;
+    if (quote != null) rates = ExchangeRates(usd: (quote['rate'] as num).toDouble());
+    profile = UserProfile(name: _nameFromEmail('${me['email']}'), email: '${me['email']}');
+    subscriptions = all;
+    serverMonthlyTotal = (activeBody['monthlyTotalPen'] as num?)?.toDouble();
+  }
+
+  Future<void> saveSubscription(Subscription value) async {
+    await _guard(() async {
+      if (connected) {
+        if (value.currency == Currency.eur || value.frequency == BillingFrequency.quarterly) {
+          throw const ApiException(400, 'El servidor admite PEN/USD y frecuencia mensual/anual.');
+        }
+        final existing = subscriptions.any((item) => item.id == value.id);
+        final body = <String, dynamic>{
+          'amount': value.amount,
+          'category': value.category.name.toUpperCase(),
+          'nextBillingDate': _date(value.nextCharge),
+        };
+        if (!existing) {
+          body.addAll({'name': value.name, 'currency': value.currency.code, 'billingCycle': value.frequency.apiValue});
+        }
+        await api.request(existing ? 'PATCH' : 'POST', existing ? '/api/v1/subscriptions/${value.id}' : '/api/v1/subscriptions', body: body);
+        await _loadRemote();
+      } else {
+        _upsert(value);
+      }
+    });
+  }
+
+  Subscription draft({
+    required String name,
+    required double amount,
+    required Currency currency,
+    required BillingFrequency frequency,
+    required DateTime nextCharge,
+    required SubscriptionCategory category,
+    String notes = '',
+  }) => Subscription(
+        id: const Uuid().v4(),
+        name: name,
+        amount: amount,
+        currency: currency,
+        frequency: frequency,
+        nextCharge: nextCharge,
+        category: category,
+        notes: notes,
+      );
+
+  Future<void> cancel(Subscription item) async {
+    await _guard(() async {
+      if (connected) {
+        await api.request('POST', '/api/v1/subscriptions/${item.id}/cancel');
+        await _loadRemote();
+      } else {
+        _upsert(item.copyWith(cancelled: true));
+      }
+    });
+  }
+
+  void toggleUnused(Subscription item) {
+    _upsert(item.unusedSince == null ? item.copyWith(unusedSince: DateTime.now()) : item.copyWith(clearUnused: true));
+  }
+
+  Future<Map<String, dynamic>> deliverySummary(int year, int month) =>
+      api.request('GET', '/api/v1/delivery-expenses/summary?year=$year&month=$month');
+
+  Future<void> saveDeliveryBudget(int year, int month, double? limit) =>
+      api.request('PUT', '/api/v1/delivery-expenses/budget', body: {'year': year, 'month': month, 'spendingLimit': limit});
+
+  Future<void> saveDeliveryExpense({required String merchant, required double amount, required String category, required DateTime date}) =>
+      api.request('POST', '/api/v1/delivery-expenses', body: {
+        'requestId': const Uuid().v4(),
+        'merchant': merchant,
+        'amount': amount,
+        'category': category,
+        'expenseDate': _date(date),
+      });
+
+  void updateReminders(ReminderSettings value) {
+    reminders = value;
+    notifyListeners();
+  }
+
+  Future<void> logout() async {
+    if (connected) await api.logout();
+    accessMode = AccessMode.signedOut;
+    subscriptions = const [];
+    serverMonthlyTotal = null;
+    notifyListeners();
+  }
+
+  void _upsert(Subscription value) {
+    final exists = subscriptions.any((item) => item.id == value.id);
+    subscriptions = exists ? subscriptions.map((item) => item.id == value.id ? value : item).toList() : [...subscriptions, value];
+    notifyListeners();
+  }
+
+  Future<void> _guard(Future<void> Function() action) async {
+    busy = true;
+    error = null;
+    notifyListeners();
+    try {
+      await action();
+    } catch (failure) {
+      error = '$failure';
+      rethrow;
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  static String _date(DateTime value) => '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
+  static String _nameFromEmail(String email) {
+    final raw = email.split('@').first.replaceAll(RegExp(r'[._-]+'), ' ').trim();
+    return raw.isEmpty ? 'Mi cuenta' : raw.split(' ').map((word) => '${word[0].toUpperCase()}${word.substring(1)}').join(' ');
+  }
+}
+
+class ControllerScope extends InheritedNotifier<AppController> {
+  const ControllerScope({super.key, required AppController controller, required super.child}) : super(notifier: controller);
+  static AppController of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<ControllerScope>()!.notifier!;
+}
+
