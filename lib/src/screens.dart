@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app_controller.dart';
 import 'models.dart';
@@ -320,7 +320,7 @@ class ProfileScreen extends StatelessWidget {
           const Divider(height: 1),
           ListTile(leading: const Icon(Icons.cloud_outlined), title: const Text('Servidor'), subtitle: Text(controller.api.baseUrl)),
           const Divider(height: 1),
-          ListTile(leading: const Icon(Icons.info_outline), title: const Text('Acerca de'), subtitle: const Text('CraveWallet Flutter 1.0.0')),
+          const ListTile(leading: Icon(Icons.info_outline), title: Text('Acerca de'), subtitle: Text('CraveWallet Flutter 1.0.0')),
         ])),
         const SizedBox(height: 14),
         OutlinedButton.icon(onPressed: controller.busy ? null : controller.logout, icon: const Icon(Icons.logout), label: const Text('Cerrar sesión')),
