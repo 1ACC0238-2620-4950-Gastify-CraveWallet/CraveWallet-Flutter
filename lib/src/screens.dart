@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'app_controller.dart';
 import 'models.dart';
+import 'premium_screen.dart';
 import 'theme.dart';
 
 final _money = NumberFormat.currency(locale: 'es_PE', symbol: 'S/');
@@ -100,7 +101,12 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-  static const pages = [HomeScreen(), SubscriptionsScreen(), AnalysisScreen(), ProfileScreen()];
+  List<Widget> get pages => [
+        const HomeScreen(),
+        const SubscriptionsScreen(),
+        AnalysisScreen(onDismiss: () => setState(() => index = 0)),
+        const ProfileScreen(),
+      ];
   static const titles = ['Inicio', 'Suscripciones', 'Análisis', 'Perfil'];
 
   @override
@@ -269,10 +275,53 @@ class _SubscriptionActions extends StatelessWidget {
 }
 
 class AnalysisScreen extends StatelessWidget {
-  const AnalysisScreen({super.key});
+  const AnalysisScreen({super.key, required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
   @override
   Widget build(BuildContext context) {
     final controller = ControllerScope.of(context);
+    if (!controller.profile.premium) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(Icons.lock_outline, size: 36, color: CraveColors.navy),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Análisis es parte de Premium',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  PremiumBenefits(subscriptionCount: controller.active.length),
+                  const SizedBox(height: 12),
+                  Text(
+                    controller.premiumStatus?.pending == true
+                        ? 'Estamos esperando la confirmación de Mercado Pago.'
+                        : '${formatPremiumPrice(controller.premiumPrice)} al mes. Cancela cuando quieras.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => showPremium(context),
+                    icon: const Icon(Icons.workspace_premium),
+                    label: const Text('Ver Premium'),
+                  ),
+                  TextButton(onPressed: onDismiss, child: const Text('Ahora no')),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     final totals = <SubscriptionCategory, double>{};
     for (final item in controller.active) {
       totals.update(item.category, (value) => value + item.monthlyPen(controller.rates), ifAbsent: () => item.monthlyPen(controller.rates));
@@ -283,6 +332,8 @@ class AnalysisScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         _TotalCard(total: controller.monthlyTotal, count: controller.active.length),
+        const SizedBox(height: 20),
+        _UpcomingChargesHeatmap(subscriptions: controller.active),
         const SizedBox(height: 20),
         const _SectionTitle(title: 'Por categoría'),
         const SizedBox(height: 12),
@@ -301,6 +352,81 @@ class AnalysisScreen extends StatelessWidget {
   }
 }
 
+class _UpcomingChargesHeatmap extends StatelessWidget {
+  const _UpcomingChargesHeatmap({required this.subscriptions});
+
+  final List<Subscription> subscriptions;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final dates = List.generate(30, (index) => DateTime(
+      today.year,
+      today.month,
+      today.day + index,
+    ));
+    final chargesByDate = <DateTime, int>{};
+    for (final subscription in subscriptions) {
+      final date = DateUtils.dateOnly(subscription.nextCharge);
+      chargesByDate.update(date, (count) => count + 1, ifAbsent: () => 1);
+    }
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionTitle(title: 'Mapa de calor de próximos cobros'),
+        const SizedBox(height: 8),
+        const Text('Próximos 30 días'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final date in dates)
+              _day(date, chargesByDate[date] ?? 0, colors),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _day(DateTime date, int count, ColorScheme colors) {
+    final label = '${DateFormat('d MMM', 'es').format(date)} · '
+        '${count == 1 ? '1 cobro' : '$count cobros'}';
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        excludeSemantics: true,
+        child: Container(
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: switch (count) {
+              0 => colors.surfaceContainerHighest,
+              1 => colors.primaryContainer,
+              _ => colors.primary,
+            },
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            '${date.day}',
+            style: TextStyle(
+              fontSize: 12,
+              color: switch (count) {
+                0 => colors.onSurfaceVariant,
+                1 => colors.onPrimaryContainer,
+                _ => colors.onPrimary,
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
   @override
@@ -312,10 +438,18 @@ class ProfileScreen extends StatelessWidget {
         Card(child: Padding(padding: const EdgeInsets.all(18), child: Row(children: [
           CircleAvatar(radius: 28, backgroundColor: CraveColors.primary, child: Text(controller.profile.firstName.characters.first.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold))),
           const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(controller.profile.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)), Text(controller.profile.email), Text(controller.profile.premium ? 'Plan Premium' : 'Plan gratuito', style: TextStyle(color: controller.profile.premium ? CraveColors.orange : CraveColors.muted))])),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(controller.profile.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)), Text(controller.profile.email)])),
         ]))),
         const SizedBox(height: 14),
         Card(child: Column(children: [
+          ListTile(
+            leading: const Icon(Icons.workspace_premium),
+            title: const Text('Plan Premium'),
+            subtitle: Text(premiumPlanLabel(controller)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showPremium(context),
+          ),
+          const Divider(height: 1),
           ListTile(leading: const Icon(Icons.notifications_outlined), title: const Text('Recordatorios'), subtitle: Text('${controller.reminders.daysBefore} día(s) antes, ${controller.reminders.hour}:00'), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RemindersScreen()))),
           const Divider(height: 1),
           ListTile(leading: const Icon(Icons.cloud_outlined), title: const Text('Servidor'), subtitle: Text(controller.api.baseUrl)),
@@ -409,6 +543,10 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
 
 Future<void> showAddSubscription(BuildContext context) async {
   final controller = ControllerScope.of(context);
+  if (controller.reachedFreeLimit) {
+    showPremium(context);
+    return;
+  }
   final name = TextEditingController();
   final amount = TextEditingController();
   final notes = TextEditingController();

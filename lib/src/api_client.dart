@@ -119,19 +119,29 @@ class ApiClient {
     if (body != null) request.body = jsonEncode(body);
     final streamed = await _client.send(request).timeout(const Duration(seconds: 180));
     final response = await http.Response.fromStream(streamed);
-    final decoded = response.body.trim().isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      Object? decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        decoded = null;
+      }
       final detail = decoded is Map ? decoded['detail'] : null;
       final message = detail is String && detail.isNotEmpty
           ? detail
           : switch (response.statusCode) {
               401 => 'La sesión o las credenciales no son válidas.',
               404 => 'No se encontró el registro en tu cuenta.',
+              503 when path.startsWith('/api/v1/premium/') =>
+                'Premium no está disponible en este momento. Vuelve a intentarlo.',
               503 => 'El tipo de cambio no está disponible.',
               _ => 'No se pudo completar la operación (${response.statusCode}).',
             };
       throw ApiException(response.statusCode, message);
     }
+    final decoded = response.body.trim().isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(response.body);
     return decoded is Map<String, dynamic> ? decoded : <String, dynamic>{'items': decoded};
   }
 }
