@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import 'api_client.dart';
 import 'models.dart';
+import 'premium_models.dart';
 
 enum AccessMode { signedOut, connected, demo }
 
@@ -18,8 +19,20 @@ class AppController extends ChangeNotifier {
   double? serverMonthlyTotal;
   bool busy = false;
   String? error;
+  PremiumStatus? premiumStatus;
+  String? premiumError;
+  bool premiumBusy = false;
+  int _sessionVersion = 0;
 
   bool get connected => accessMode == AccessMode.connected;
+  double get premiumPrice =>
+      premiumStatus?.monthlyPrice ?? PremiumStatus.defaultMonthlyPrice;
+
+  bool get reachedFreeLimit =>
+      connected &&
+      premiumStatus != null &&
+      !profile.premium &&
+      active.length >= PremiumStatus.freeSubscriptionLimit;
   List<Subscription> get active => subscriptions.where((item) => item.active).toList();
   double get monthlyTotal => serverMonthlyTotal ?? active.fold(0, (sum, item) => sum + item.monthlyPen(rates));
 
@@ -35,6 +48,7 @@ class AppController extends ChangeNotifier {
   Future<void> authenticate(String email, String password, {required bool register}) async {
     await _guard(() async {
       final user = await api.authenticate(email, password, register: register);
+      _resetPremium();
       profile = UserProfile(name: _nameFromEmail('${user['email']}'), email: '${user['email']}');
       accessMode = AccessMode.connected;
       await _loadRemote();
@@ -43,6 +57,7 @@ class AppController extends ChangeNotifier {
 
   void enterDemo() {
     final now = DateTime.now();
+    _resetPremium();
     accessMode = AccessMode.demo;
     profile = const UserProfile(name: 'Renzo Salazar', email: 'renzo.salazar@gmail.com', premium: true);
     rates = const ExchangeRates();
@@ -87,9 +102,108 @@ class AppController extends ChangeNotifier {
     }
     final quote = activeBody['exchangeRate'] as Map?;
     if (quote != null) rates = ExchangeRates(usd: (quote['rate'] as num).toDouble());
-    profile = UserProfile(name: _nameFromEmail('${me['email']}'), email: '${me['email']}');
+    profile = UserProfile(
+      name: _nameFromEmail('${me['email']}'),
+      email: '${me['email']}',
+      premium: premiumStatus?.premium ?? false,
+    );
     subscriptions = all;
     serverMonthlyTotal = (activeBody['monthlyTotalPen'] as num?)?.toDouble();
+    await refreshPremium();
+  }
+
+  Future<void> refreshPremium() async {
+    if (!connected || premiumBusy) return;
+    try {
+      await _runPremium(
+        () async => PremiumStatus.fromApi(
+          await api.request('GET', '/api/v1/premium/status'),
+        ),
+        apply: _applyPremiumStatus,
+      );
+    } catch (_) {}
+  }
+
+  Future<Uri> startPremiumCheckout() => _runPremium(() async {
+        final response = await api.request('POST', '/api/v1/premium/checkout');
+        final link = response['checkoutUrl'];
+        final uri = link is String ? Uri.tryParse(link) : null;
+        const checkoutHosts = {
+          'www.mercadopago.com.pe',
+          'www.mercadopago.com.ar',
+          'www.mercadopago.com',
+        };
+        if (uri == null ||
+            uri.scheme != 'https' ||
+            uri.userInfo.isNotEmpty ||
+            uri.port != 443 ||
+            !checkoutHosts.contains(uri.host)) {
+          throw const FormatException('El servidor no devolvió un enlace de pago válido.');
+        }
+        return uri;
+      });
+
+  Future<void> cancelPremium() async {
+    await _runPremium(
+      () async => PremiumStatus.fromApi(
+        await api.request('POST', '/api/v1/premium/cancel'),
+      ),
+      apply: _applyPremiumStatus,
+    );
+  }
+
+  Future<List<PremiumPayment>> loadPremiumPayments() => _runPremium(() async {
+        final response = await api.request('GET', '/api/v1/premium/payments');
+        final items = response['items'] as List<dynamic>;
+        return items
+            .cast<Map<String, dynamic>>()
+            .map(PremiumPayment.fromApi)
+            .toList();
+      });
+
+  Future<T> _runPremium<T>(Future<T> Function() operation, {void Function(T)? apply}) async {
+    if (!connected || premiumBusy) {
+      throw const ApiException(409, 'Espera a que termine la operación de Premium.');
+    }
+    final sessionVersion = _sessionVersion;
+    premiumBusy = true;
+    premiumError = null;
+    notifyListeners();
+    try {
+      final result = await operation();
+      if (sessionVersion != _sessionVersion) {
+        throw const ApiException(401, 'La sesión cambió. Vuelve a intentarlo.');
+      }
+      apply?.call(result);
+      return result;
+    } catch (failure) {
+      if (sessionVersion == _sessionVersion) {
+        premiumError = switch (failure) {
+          ApiException(status: 404) => 'Premium aún no está disponible en este servidor.',
+          ApiException(message: final message) => message,
+          FormatException(message: final message) => message,
+          _ => 'No se pudo consultar Premium. Vuelve a intentarlo.',
+        };
+      }
+      rethrow;
+    } finally {
+      if (sessionVersion == _sessionVersion) {
+        premiumBusy = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  void _applyPremiumStatus(PremiumStatus status) {
+    premiumStatus = status;
+    profile = profile.copyWith(premium: status.premium);
+  }
+
+  void _resetPremium() {
+    _sessionVersion++;
+    premiumStatus = null;
+    premiumError = null;
+    premiumBusy = false;
   }
 
   Future<void> saveSubscription(Subscription value) async {
@@ -170,11 +284,17 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    if (connected) await api.logout();
-    accessMode = AccessMode.signedOut;
-    subscriptions = const [];
-    serverMonthlyTotal = null;
-    notifyListeners();
+    try {
+      if (connected) await api.logout();
+    } finally {
+      _resetPremium();
+      accessMode = AccessMode.signedOut;
+      profile = const UserProfile(name: 'Mi cuenta', email: '');
+      subscriptions = const [];
+      serverMonthlyTotal = null;
+      error = null;
+      notifyListeners();
+    }
   }
 
   void _upsert(Subscription value) {
