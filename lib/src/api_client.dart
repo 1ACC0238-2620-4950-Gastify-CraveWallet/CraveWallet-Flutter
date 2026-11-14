@@ -21,7 +21,7 @@ class ApiClient {
 
   static const defaultBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://cravewallet-api.onrender.com',
+    defaultValue: 'https://cravewallet-api-av2.onrender.com',
   );
 
   final http.Client _client;
