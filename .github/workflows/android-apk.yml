@@ -1,0 +1,46 @@
+name: Android APK AV2
+
+on:
+  push:
+    branches: [build/av2-android-apk]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      API_BASE_URL: https://cravewallet-api.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.0'
+          channel: stable
+          cache: true
+      - name: Build Android APK
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter build apk --debug --no-pub --dart-define="API_BASE_URL=$API_BASE_URL"
+          cp build/app/outputs/flutter-apk/app-debug.apk CraveWallet-AV2-Android.apk
+      - name: Verify package and signature
+        run: |
+          build_tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          "$build_tools/apksigner" verify --print-certs CraveWallet-AV2-Android.apk
+          "$build_tools/aapt" dump badging CraveWallet-AV2-Android.apk | tee apk-info.txt
+          grep -F "package: name='com.cravewallet.app'" apk-info.txt
+          sha256sum CraveWallet-AV2-Android.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CraveWallet-AV2-Android
+          path: |
+            CraveWallet-AV2-Android.apk
+            SHA256SUMS.txt
+          if-no-files-found: error
