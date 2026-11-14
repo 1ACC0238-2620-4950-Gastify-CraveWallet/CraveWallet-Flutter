@@ -28,6 +28,9 @@ jobs:
       - name: Build Android APK
         run: |
           flutter pub get --enforce-lockfile
+          # The Flutter template's Gradle lock predates the app's Android plugins.
+          # Use its opt-out in this checkout while keeping Dart dependencies locked.
+          touch android/.ignore-locking.md
           flutter build apk --debug --no-pub --dart-define="API_BASE_URL=$API_BASE_URL"
           cp build/app/outputs/flutter-apk/app-debug.apk CraveWallet-AV2-Android.apk
       - name: Verify package and signature
