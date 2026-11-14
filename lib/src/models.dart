@@ -1,28 +1,70 @@
+import '../l10n/app_localizations.dart';
+
 enum Currency { pen, usd, eur }
 
 extension CurrencyX on Currency {
   String get code => name.toUpperCase();
-  String get symbol => this == Currency.pen ? 'S/' : this == Currency.usd ? r'$' : '€';
+  String get symbol =>
+      this == Currency.pen ? 'S/' : this == Currency.usd ? r'$' : '€';
 }
 
 enum BillingFrequency { monthly, quarterly, annual }
 
 extension BillingFrequencyX on BillingFrequency {
-  int get months => this == BillingFrequency.monthly ? 1 : this == BillingFrequency.quarterly ? 3 : 12;
-  String get label => this == BillingFrequency.monthly ? 'Mensual' : this == BillingFrequency.quarterly ? 'Trimestral' : 'Anual';
-  String get apiValue => this == BillingFrequency.annual ? 'ANNUAL' : 'MONTHLY';
+  int get months => this == BillingFrequency.monthly
+      ? 1
+      : this == BillingFrequency.quarterly
+          ? 3
+          : 12;
+  String get label => this == BillingFrequency.monthly
+      ? 'Monthly'
+      : this == BillingFrequency.quarterly
+          ? 'Quarterly'
+          : 'Annual';
+  String localizedLabel(AppLocalizations l10n) => switch (this) {
+        BillingFrequency.monthly => l10n.frequencyMonthly,
+        BillingFrequency.quarterly => l10n.frequencyQuarterly,
+        BillingFrequency.annual => l10n.frequencyAnnual,
+      };
+  String get apiValue =>
+      this == BillingFrequency.annual ? 'ANNUAL' : 'MONTHLY';
 }
 
-enum SubscriptionCategory { streaming, productividad, fitness, musica, delivery, otros }
+enum SubscriptionCategory {
+  streaming,
+  productividad,
+  fitness,
+  musica,
+  delivery,
+  otros,
+}
 
 extension SubscriptionCategoryX on SubscriptionCategory {
   String get label => switch (this) {
         SubscriptionCategory.streaming => 'Streaming',
-        SubscriptionCategory.productividad => 'Productividad',
+        SubscriptionCategory.productividad => 'Productivity',
         SubscriptionCategory.fitness => 'Fitness',
-        SubscriptionCategory.musica => 'Música',
+        SubscriptionCategory.musica => 'Music',
         SubscriptionCategory.delivery => 'Delivery',
-        SubscriptionCategory.otros => 'Otros',
+        SubscriptionCategory.otros => 'Others',
+      };
+
+  String get _spanishLabel => switch (this) {
+        SubscriptionCategory.streaming => 'streaming',
+        SubscriptionCategory.productividad => 'productividad',
+        SubscriptionCategory.fitness => 'fitness',
+        SubscriptionCategory.musica => 'música',
+        SubscriptionCategory.delivery => 'delivery',
+        SubscriptionCategory.otros => 'otros',
+      };
+
+  String localizedLabel(AppLocalizations l10n) => switch (this) {
+        SubscriptionCategory.streaming => l10n.categoryStreaming,
+        SubscriptionCategory.productividad => l10n.categoryProductivity,
+        SubscriptionCategory.fitness => l10n.categoryFitness,
+        SubscriptionCategory.musica => l10n.categoryMusic,
+        SubscriptionCategory.delivery => l10n.categoryDelivery,
+        SubscriptionCategory.otros => l10n.categoryOthers,
       };
 }
 
@@ -52,7 +94,8 @@ class Subscription {
   final DateTime? unusedSince;
 
   bool get active => !cancelled;
-  double monthlyPen(ExchangeRates rates) => amount * rates.rate(currency) / frequency.months;
+  double monthlyPen(ExchangeRates rates) =>
+      amount * rates.rate(currency) / frequency.months;
 
   Subscription copyWith({
     double? amount,
@@ -62,7 +105,8 @@ class Subscription {
     bool? cancelled,
     DateTime? unusedSince,
     bool clearUnused = false,
-  }) => Subscription(
+  }) =>
+      Subscription(
         id: id,
         name: name,
         amount: amount ?? this.amount,
@@ -75,7 +119,10 @@ class Subscription {
         unusedSince: clearUnused ? null : unusedSince ?? this.unusedSince,
       );
 
-  factory Subscription.fromApi(Map<String, dynamic> json, {Subscription? local}) {
+  factory Subscription.fromApi(
+    Map<String, dynamic> json, {
+    Subscription? local,
+  }) {
     final categoryText = '${json['category'] ?? ''}'.toLowerCase();
     return Subscription(
       id: '${json['id']}',
@@ -85,10 +132,15 @@ class Subscription {
         (value) => value.code == json['currency'],
         orElse: () => Currency.pen,
       ),
-      frequency: json['billingCycle'] == 'ANNUAL' ? BillingFrequency.annual : BillingFrequency.monthly,
+      frequency: json['billingCycle'] == 'ANNUAL'
+          ? BillingFrequency.annual
+          : BillingFrequency.monthly,
       nextCharge: DateTime.parse('${json['nextBillingDate']}'),
       category: SubscriptionCategory.values.firstWhere(
-        (value) => value.name == categoryText || value.label.toLowerCase() == categoryText,
+        (value) =>
+            value.name == categoryText ||
+            value.label.toLowerCase() == categoryText ||
+            value._spanishLabel == categoryText,
         orElse: () => SubscriptionCategory.otros,
       ),
       cancelled: json['status'] == 'CANCELLED',
@@ -110,22 +162,42 @@ class ExchangeRates {
 }
 
 class UserProfile {
-  const UserProfile({required this.name, required this.email, this.premium = false});
+  const UserProfile({
+    required this.name,
+    required this.email,
+    this.premium = false,
+  });
   final String name;
   final String email;
   final bool premium;
-  String get firstName => name.trim().split(' ').where((part) => part.isNotEmpty).firstOrNull ?? 'Hola';
-  UserProfile copyWith({String? name, bool? premium}) =>
-      UserProfile(name: name ?? this.name, email: email, premium: premium ?? this.premium);
+  String get firstName =>
+      name.trim().split(' ').where((part) => part.isNotEmpty).firstOrNull ??
+      'There';
+  UserProfile copyWith({String? name, bool? premium}) => UserProfile(
+        name: name ?? this.name,
+        email: email,
+        premium: premium ?? this.premium,
+      );
 }
 
 class ReminderSettings {
-  const ReminderSettings({this.calendarEnabled = true, this.pushEnabled = false, this.daysBefore = 1, this.hour = 9});
+  const ReminderSettings({
+    this.calendarEnabled = true,
+    this.pushEnabled = false,
+    this.daysBefore = 1,
+    this.hour = 9,
+  });
   final bool calendarEnabled;
   final bool pushEnabled;
   final int daysBefore;
   final int hour;
-  ReminderSettings copyWith({bool? calendarEnabled, bool? pushEnabled, int? daysBefore, int? hour}) => ReminderSettings(
+  ReminderSettings copyWith({
+    bool? calendarEnabled,
+    bool? pushEnabled,
+    int? daysBefore,
+    int? hour,
+  }) =>
+      ReminderSettings(
         calendarEnabled: calendarEnabled ?? this.calendarEnabled,
         pushEnabled: pushEnabled ?? this.pushEnabled,
         daysBefore: daysBefore ?? this.daysBefore,
@@ -136,4 +208,3 @@ class ReminderSettings {
 extension FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
-

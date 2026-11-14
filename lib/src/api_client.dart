@@ -4,6 +4,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/app_localizations_en.dart';
+import '../l10n/app_localizations_es.dart';
+
 class ApiException implements Exception {
   const ApiException(this.status, this.message);
   final int status;
@@ -24,7 +28,13 @@ class ApiClient {
   late SharedPreferences _prefs;
   Future<void>? _refreshing;
 
-  String get baseUrl => (_prefs.getString('api_url') ?? defaultBaseUrl).replaceAll(RegExp(r'/$'), '');
+  SharedPreferences get prefs => _prefs;
+  String get languageCode => _prefs.getString('app_locale') ?? 'en';
+  AppLocalizations get l10n =>
+      languageCode == 'es' ? AppLocalizationsEs() : AppLocalizationsEn();
+
+  String get baseUrl =>
+      (_prefs.getString('api_url') ?? defaultBaseUrl).replaceAll(RegExp(r'/$'), '');
   String? get accessToken => _prefs.getString('access_token');
   String? get refreshToken => _prefs.getString('refresh_token');
   String get email => _prefs.getString('session_email') ?? '';
@@ -32,7 +42,11 @@ class ApiClient {
 
   Future<void> initialize() async => _prefs = await SharedPreferences.getInstance();
 
-  Future<Map<String, dynamic>> authenticate(String email, String password, {required bool register}) async {
+  Future<Map<String, dynamic>> authenticate(
+    String email,
+    String password, {
+    required bool register,
+  }) async {
     final body = await _raw(
       'POST',
       register ? '/api/v1/auth/register' : '/api/v1/auth/login',
@@ -48,7 +62,7 @@ class ApiClient {
     Map<String, dynamic>? body,
   }) async {
     final token = accessToken;
-    if (token == null) throw const ApiException(401, 'Inicia sesión para continuar.');
+    if (token == null) throw ApiException(401, l10n.errSignInRequired);
     try {
       return await _raw(method, path, body: body, token: token);
     } on ApiException catch (error) {
@@ -79,8 +93,12 @@ class ApiClient {
     _refreshing = completer.future;
     try {
       final refresh = refreshToken;
-      if (refresh == null) throw const ApiException(401, 'La sesión expiró.');
-      final body = await _raw('POST', '/api/v1/auth/refresh', body: {'refreshToken': refresh});
+      if (refresh == null) throw ApiException(401, l10n.errSessionExpired);
+      final body = await _raw(
+        'POST',
+        '/api/v1/auth/refresh',
+        body: {'refreshToken': refresh},
+      );
       await _saveSession(body);
       completer.complete();
     } catch (error, stackTrace) {
@@ -117,7 +135,8 @@ class ApiClient {
     final request = http.Request(method, Uri.parse('$baseUrl$path'))
       ..headers.addAll(headers);
     if (body != null) request.body = jsonEncode(body);
-    final streamed = await _client.send(request).timeout(const Duration(seconds: 180));
+    final streamed =
+        await _client.send(request).timeout(const Duration(seconds: 180));
     final response = await http.Response.fromStream(streamed);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       Object? decoded;
@@ -130,19 +149,20 @@ class ApiClient {
       final message = detail is String && detail.isNotEmpty
           ? detail
           : switch (response.statusCode) {
-              401 => 'La sesión o las credenciales no son válidas.',
-              404 => 'No se encontró el registro en tu cuenta.',
+              401 => l10n.errInvalidCredentials,
+              404 => l10n.errRecordNotFound,
               503 when path.startsWith('/api/v1/premium/') =>
-                'Premium no está disponible en este momento. Vuelve a intentarlo.',
-              503 => 'El tipo de cambio no está disponible.',
-              _ => 'No se pudo completar la operación (${response.statusCode}).',
+                l10n.errPremiumUnavailable,
+              503 => l10n.errExchangeRateUnavailable,
+              _ => l10n.errOperationFailed(response.statusCode),
             };
       throw ApiException(response.statusCode, message);
     }
     final decoded = response.body.trim().isEmpty
         ? <String, dynamic>{}
         : jsonDecode(response.body);
-    return decoded is Map<String, dynamic> ? decoded : <String, dynamic>{'items': decoded};
+    return decoded is Map<String, dynamic>
+        ? decoded
+        : <String, dynamic>{'items': decoded};
   }
 }
-

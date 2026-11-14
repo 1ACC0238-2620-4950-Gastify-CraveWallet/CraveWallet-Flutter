@@ -1,0 +1,303 @@
+{
+  "@@locale": "es",
+  "appTitle": "CraveWallet",
+  "myAccount": "Mi cuenta",
+  "helloFallback": "Hola",
+  "frequencyMonthly": "Mensual",
+  "frequencyQuarterly": "Trimestral",
+  "frequencyAnnual": "Anual",
+  "categoryStreaming": "Streaming",
+  "categoryProductivity": "Productividad",
+  "categoryFitness": "Fitness",
+  "categoryMusic": "Música",
+  "categoryDelivery": "Delivery",
+  "categoryOthers": "Otros",
+  "statusCancelled": "Cancelada",
+  "statusUnused": "Sin usar",
+  "authRegisterSubtitle": "Crea tu cuenta y ordena tus pagos.",
+  "authLoginSubtitle": "Todas tus suscripciones en un solo lugar.",
+  "emailLabel": "Correo electrónico",
+  "passwordLabel": "Contraseña",
+  "showPasswordTooltip": "Mostrar contraseña",
+  "hidePasswordTooltip": "Ocultar contraseña",
+  "processing": "Procesando…",
+  "createAccount": "Crear cuenta",
+  "signIn": "Iniciar sesión",
+  "alreadyHaveAccount": "Ya tengo una cuenta",
+  "createAnAccount": "Crear una cuenta",
+  "orSeparator": "o",
+  "exploreDemoMode": "Explorar modo demostración",
+  "invalidCredentialsForm": "Ingresa un correo válido y una contraseña de al menos 8 caracteres.",
+  "signInFailed": "No fue posible iniciar sesión.",
+  "termsAcceptPrefix": "He leído y acepto los ",
+  "termsLinkText": "Términos y Condiciones",
+  "termsMustAccept": "Debes aceptar los Términos y Condiciones para crear una cuenta.",
+  "termsTitle": "Términos y Condiciones",
+  "termsAcceptAction": "Aceptar Términos",
+  "termsCloseTooltip": "Cerrar",
+  "termsBody": "Bienvenido a CraveWallet.\n\n1. Propósito del Servicio\nCraveWallet es una aplicación de finanzas personales diseñada para ayudar a los usuarios a registrar y controlar suscripciones recurrentes y gastos de delivery, administrar presupuestos mensuales, convertir monedas (PEN/USD/EUR) y recibir recordatorios antes de las fechas de cobro.\n\n2. Planes y Pagos (CraveWallet Premium)\n- Plan Gratuito: Permite registrar hasta 5 suscripciones activas y gestionar gastos de delivery.\n- CraveWallet Premium: Tiene un costo de S/ 9.99 al mes (PEN) e incluye suscripciones activas ilimitadas, análisis de gasto mensual y por categoría en soles, y el mapa de calor de próximos cobros de 30 días.\n- Procesamiento de Pagos: La suscripción Premium se procesa externamente a través de Mercado Pago. CraveWallet no almacena números de tarjetas ni códigos de seguridad (CVV); únicamente recibe la confirmación de pago y el estado de la membresía.\n- Cancelación: Puedes cancelar la renovación automática en cualquier momento desde la pantalla de Premium y conservarás el acceso hasta el fin del período pagado.\n\n3. Datos Almacenados y Procesados\nAlmacenamos tu correo electrónico, credenciales de autenticación cifradas, registros de suscripciones (nombre, monto, moneda, ciclo de facturación, próxima fecha de cobro, categoría, notas), registros de gastos de delivery (comercio, monto, categoría, fecha, presupuesto mensual) y preferencias locales de sesión.\n\n4. Permisos del Dispositivo y Recordatorios\n- Notificaciones (POST_NOTIFICATIONS): Se utilizan exclusivamente cuando las activas en Recordatorios para programar notificaciones locales en tu dispositivo antes de cada cobro.\n- Calendario: Se utiliza únicamente cuando eliges agregar próximos cobros al calendario de tu dispositivo.\nPuedes revocar estos permisos o desactivar los recordatorios en cualquier momento.\n\n5. Compromiso Ético (Principios ACM/IEEE y CIP)\nEn cumplimiento del Código de Ética de Ingeniería de Software ACM/IEEE y del Código de Ética del Colegio de Ingenieros del Perú (CIP):\n- Privacidad y Confidencialidad: Recopilamos únicamente los datos mínimos necesarios para brindar el servicio.\n- No Venta de Datos: CraveWallet jamás vende, alquila ni comercializa tus datos personales o financieros con terceros.\n- Honestidad y Transparencia: Los tipos de cambio, totales estimados y cobros de membresía se muestran de forma clara y sin cargos ocultos.\n- Eliminación de Cuenta y Datos: Tienes derecho a solicitar la eliminación completa de tu cuenta y sus registros asociados.\n\n6. Contacto\nPara consultas sobre privacidad, soporte o solicitudes de eliminación de cuenta, escríbenos a: [COMPLETAR: correo de contacto]",
+  "navHome": "Inicio",
+  "navSubscriptions": "Suscripciones",
+  "navExpenses": "Gastos",
+  "navAnalysis": "Análisis",
+  "navProfile": "Perfil",
+  "refreshTooltip": "Actualizar",
+  "demoBannerText": "Estás explorando datos de demostración.",
+  "exitDemo": "Salir",
+  "addAction": "Agregar",
+  "homeGreeting": "Hola, {name}",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSubtitle": "Esto es lo que viene en tus próximos cobros.",
+  "estimatedMonthlySpend": "Gasto mensual estimado",
+  "activeSubscriptionsCount": "{count} suscripciones activas",
+  "@activeSubscriptionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "upcomingCharges": "Próximos cobros",
+  "activeCountBadge": "{count} activos",
+  "@activeCountBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deliveryExpensesTitle": "Gastos de delivery",
+  "deliveryConnectedSubtitle": "Registra pedidos y controla tu presupuesto.",
+  "deliveryDisconnectedSubtitle": "Disponible al conectar tu cuenta.",
+  "searchSubscriptionsHint": "Buscar por nombre o categoría",
+  "showCancelled": "Mostrar canceladas",
+  "markAsUnused": "Marcar como sin usar",
+  "markAsUsed": "Marcar como usada",
+  "cancelSubscription": "Cancelar suscripción",
+  "addToCalendar": "Añadir al calendario",
+  "calendarOpened": "Evento abierto en el calendario.",
+  "calendarUnsupported": "La integración de calendario no está disponible en esta plataforma.",
+  "analysisPremiumTitle": "Análisis es parte de Premium",
+  "analysisPendingConfirmation": "Estamos esperando la confirmación de Mercado Pago.",
+  "analysisPriceCancelAnytime": "{price} al mes. Cancela cuando quieras.",
+  "@analysisPriceCancelAnytime": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "viewPremium": "Ver Premium",
+  "notNow": "Ahora no",
+  "byCategory": "Por categoría",
+  "addSubscriptionsForAnalysis": "Agrega suscripciones para ver tu análisis.",
+  "topCategoryInsight": "Tu categoría con mayor gasto es {category}. Representa {percent}% del total mensual.",
+  "@topCategoryInsight": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "heatmapTitle": "Mapa de calor de próximos cobros",
+  "next30Days": "Próximos 30 días",
+  "oneCharge": "1 cobro",
+  "multipleCharges": "{count} cobros",
+  "@multipleCharges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumPlan": "Plan Premium",
+  "reminders": "Recordatorios",
+  "remindersSubtitle": "{days} día(s) antes, {hour}:00",
+  "@remindersSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "languageLabel": "Idioma",
+  "languageEnglish": "English",
+  "languageSpanish": "Español",
+  "serverLabel": "Servidor",
+  "aboutLabel": "Acerca de",
+  "aboutSubtitle": "CraveWallet Flutter 1.0.0",
+  "signOut": "Cerrar sesión",
+  "calendarReminderTitle": "Calendario",
+  "calendarReminderSubtitle": "Añadir cobros próximos al calendario.",
+  "notificationsReminderTitle": "Notificaciones",
+  "notificationsReminderSubtitle": "Avisar antes de cada cobro.",
+  "advanceNoticeLabel": "Anticipación",
+  "sameDay": "El mismo día",
+  "oneDayBefore": "1 día antes",
+  "threeDaysBefore": "3 días antes",
+  "sevenDaysBefore": "7 días antes",
+  "hourLabel": "Hora",
+  "notificationsScheduled": "Notificaciones locales programadas para {count} suscripción(es) activa(s).",
+  "@notificationsScheduled": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsPermissionDenied": "No se otorgó el permiso de notificaciones.",
+  "notificationChargeTitle": "Próximo cobro: {name}",
+  "@notificationChargeTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationChargeBody": "{amount} vence el {date}",
+  "@notificationChargeBody": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "previousMonthTooltip": "Mes anterior",
+  "nextMonthTooltip": "Mes siguiente",
+  "spentThisMonth": "Gastado este mes",
+  "remainingBalance": "Saldo: {amount}",
+  "@remainingBalance": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetExceeded": "Superaste tu presupuesto.",
+  "monthlyBudgetPenLabel": "Presupuesto mensual en PEN",
+  "enterValidBudget": "Escribe un presupuesto válido.",
+  "saveBudget": "Guardar presupuesto",
+  "logExpense": "Registrar gasto",
+  "merchantLabel": "Comercio",
+  "amountInPenLabel": "Monto en PEN",
+  "categoryLabel": "Categoría",
+  "defaultDeliveryCategory": "Comida",
+  "invalidDeliveryExpense": "Completa comercio, categoría y monto positivo.",
+  "saveExpense": "Guardar gasto",
+  "newSubscription": "Nueva suscripción",
+  "nameLabel": "Nombre",
+  "amountLabel": "Monto",
+  "currencyLabel": "Moneda",
+  "frequencyLabel": "Frecuencia",
+  "nextChargeLabel": "Próximo cobro",
+  "notesOptionalLabel": "Notas (opcional)",
+  "invalidSubscriptionForm": "Completa el nombre y un monto positivo.",
+  "saveFailed": "No se pudo guardar.",
+  "saveSubscription": "Guardar suscripción",
+  "emptySubscriptionsTitle": "Aún no tienes suscripciones",
+  "emptySubscriptionsSubtitle": "Agrega la primera para empezar a controlar tus pagos.",
+  "addSubscriptionButton": "Agregar suscripción",
+  "premiumTitle": "CraveWallet Premium",
+  "premiumSignInToCheck": "Inicia sesión para consultar tu plan.",
+  "premiumSignInToSubscribe": "Inicia sesión para contratar Premium.",
+  "premiumPendingConfirmation": "Pago pendiente de confirmación",
+  "premiumAccessUntil": "Acceso hasta el {date}",
+  "@premiumAccessUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPaidUntil": "Período pagado hasta el {date}",
+  "@premiumPaidUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumActive": "Plan Premium activo",
+  "premiumChecking": "Consultando tu plan…",
+  "premiumUnconfirmed": "Estado del plan por confirmar",
+  "premiumFreePlan": "Plan gratuito",
+  "premiumPricePerMonth": "{price} al mes",
+  "@premiumPricePerMonth": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCompletedCheckStatus": "Si completaste el pago, actualiza el estado para comprobarlo.",
+  "premiumOpenMercadoPago": "Abrir Mercado Pago",
+  "premiumContinuePayment": "Continuar pago",
+  "premiumPreparePayment": "Preparar pago",
+  "premiumGoToMercadoPago": "Ir a Mercado Pago",
+  "premiumCancelRenewal": "Cancelar renovación",
+  "premiumRefreshStatus": "Actualizar estado",
+  "premiumRefreshHistory": "Actualizar historial de pagos",
+  "premiumViewHistory": "Ver historial de pagos",
+  "premiumNoPayments": "Todavía no hay pagos.",
+  "premiumApproved": "Aprobado",
+  "premiumRejected": "Rechazado",
+  "premiumCancelDialogTitle": "¿Cancelar la renovación?",
+  "premiumCancelDialogContent": "Conservarás el acceso Premium hasta el fin del período pagado.",
+  "backButton": "Volver",
+  "premiumRenewalCancelled": "Renovación cancelada.",
+  "premiumCancelFailed": "No se pudo cancelar la renovación.",
+  "premiumHistoryFailed": "No se pudo cargar el historial.",
+  "premiumBrowserFailed": "No se pudo abrir el navegador para continuar el pago.",
+  "premiumPaymentOpenFailed": "No se pudo abrir el pago.",
+  "premiumTabOpenFailed": "No se pudo abrir Mercado Pago en otra pestaña.",
+  "premiumBenefitMonthlySpend": "Gasto mensual y por categoría en soles",
+  "premiumBenefitHeatmap": "Mapa de calor de los próximos cobros",
+  "premiumBenefitUnlimited": "Suscripciones sin límite",
+  "premiumBenefitUnlimitedWithCount": "Suscripciones sin límite (hoy: {count} de {limit})",
+  "@premiumBenefitUnlimitedWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "demoNoteLinkedin": "¿Lo sigo necesitando?",
+  "errSignInRequired": "Inicia sesión para continuar.",
+  "errSessionExpired": "La sesión expiró.",
+  "errInvalidCredentials": "La sesión o las credenciales no son válidas.",
+  "errRecordNotFound": "No se encontró el registro en tu cuenta.",
+  "errPremiumUnavailable": "Premium no está disponible en este momento. Vuelve a intentarlo.",
+  "errExchangeRateUnavailable": "El tipo de cambio no está disponible.",
+  "errOperationFailed": "No se pudo completar la operación ({status}).",
+  "@errOperationFailed": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "errInvalidCheckoutUrl": "El servidor no devolvió un enlace de pago válido.",
+  "errPremiumBusy": "Espera a que termine la operación de Premium.",
+  "errSessionChanged": "La sesión cambió. Vuelve a intentarlo.",
+  "errPremiumNotSupported": "Premium aún no está disponible en este servidor.",
+  "errPremiumQueryFailed": "No se pudo consultar Premium. Vuelve a intentarlo.",
+  "errUnsupportedSubscription": "El servidor admite PEN/USD y frecuencia mensual/anual."
+}

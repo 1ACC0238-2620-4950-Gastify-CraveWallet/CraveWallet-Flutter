@@ -1,7 +1,14 @@
+analyzer:
+  errors:
+    deprecated_member_use: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
 include: package:flutter_lints/flutter.yaml
 
 linter:
   rules:
     prefer_single_quotes: true
     use_super_parameters: true
-
