@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cravewallet/l10n/app_localizations.dart';
+import 'package:cravewallet/main.dart';
 import 'package:cravewallet/src/api_client.dart';
 import 'package:cravewallet/src/app_controller.dart';
 import 'package:cravewallet/src/screens.dart';
@@ -54,9 +56,12 @@ http.Response _json(Object body) => http.Response(
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(() => initializeDateFormatting('es'));
+  setUpAll(() async {
+    await initializeDateFormatting('en');
+    await initializeDateFormatting('es');
+  });
 
-  test('activa Premium solo al consultar un estado confirmado', () async {
+  test('activates Premium only when querying a confirmed status', () async {
     var membership = _status();
     final controller = await _controller((request) {
       if (request.url.path.endsWith('/checkout')) {
@@ -81,7 +86,7 @@ void main() {
     expect(controller.profile.premium, isTrue);
   });
 
-  test('mantiene acceso tras cancelar y lee el historial de pagos', () async {
+  test('retains access after cancelling and reads payment history', () async {
     final controller = await _controller((request) {
       if (request.url.path.endsWith('/payments')) {
         return _json([
@@ -112,7 +117,7 @@ void main() {
     expect(payments.single.date, DateTime.utc(2026, 11, 13, 5));
   });
 
-  test('un backend sin Premium conserva acceso a la sesión', () async {
+  test('backend without Premium keeps session access', () async {
     final controller = await _controller(
       (_) => http.Response('<html>Not found</html>', 404),
     );
@@ -120,10 +125,10 @@ void main() {
     expect(controller.connected, isTrue);
     expect(controller.error, isNull);
     expect(controller.profile.premium, isFalse);
-    expect(controller.premiumError, contains('no está disponible'));
+    expect(controller.premiumError, contains('not yet available'));
   });
 
-  test('el checkout rechaza enlaces ajenos a Mercado Pago', () async {
+  test('checkout rejects links outside Mercado Pago', () async {
     final controller = await _controller((request) {
       if (request.url.path.endsWith('/checkout')) {
         return _json({
@@ -137,7 +142,7 @@ void main() {
     expect(controller.profile.premium, isFalse);
   });
 
-  testWidgets('Análisis ofrece Ver Premium a una cuenta gratuita', (
+  testWidgets('Analytics offers View Premium to a free account (en & es)', (
     tester,
   ) async {
     final controller = await _controller((_) => _json(_status()));
@@ -145,21 +150,26 @@ void main() {
     await tester.pumpWidget(
       ControllerScope(
         controller: controller,
-        child: const MaterialApp(home: AppShell()),
+        child: MaterialApp(
+          locale: controller.locale,
+          localizationsDelegates: craveLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const AppShell(),
+        ),
       ),
     );
-    await tester.tap(find.text('Análisis'));
+    await tester.tap(find.text('Analytics'));
     await tester.pumpAndSettle();
-    expect(find.text('Análisis es parte de Premium'), findsOneWidget);
-    expect(find.text('Por categoría'), findsNothing);
+    expect(find.text('Analytics is part of Premium'), findsOneWidget);
+    expect(find.text('By category'), findsNothing);
 
-    await tester.tap(find.text('Ver Premium'));
+    await tester.tap(find.text('View Premium'));
     await tester.pumpAndSettle();
     expect(find.text('CraveWallet Premium'), findsOneWidget);
-    expect(find.text('Ir a Mercado Pago'), findsOneWidget);
+    expect(find.text('Go to Mercado Pago'), findsOneWidget);
   });
 
-  testWidgets('Análisis muestra el mapa de cobros con Premium confirmado', (
+  testWidgets('Analytics displays charges heatmap with confirmed Premium', (
     tester,
   ) async {
     final controller = await _controller(
@@ -169,13 +179,68 @@ void main() {
     await tester.pumpWidget(
       ControllerScope(
         controller: controller,
-        child: const MaterialApp(home: AppShell()),
+        child: MaterialApp(
+          locale: controller.locale,
+          localizationsDelegates: craveLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const AppShell(),
+        ),
       ),
     );
 
-    await tester.tap(find.text('Análisis'));
+    await tester.tap(find.text('Analytics'));
     await tester.pumpAndSettle();
-    expect(find.text('Análisis es parte de Premium'), findsNothing);
-    expect(find.text('Mapa de calor de próximos cobros'), findsOneWidget);
+    expect(find.text('Analytics is part of Premium'), findsNothing);
+    expect(find.text('Upcoming charges heatmap'), findsOneWidget);
+  });
+
+  testWidgets('Registration requires Terms acceptance and displays Terms screen', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final controller = AppController(api: ApiClient());
+    await controller.initialize();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      ControllerScope(
+        controller: controller,
+        child: ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) => MaterialApp(
+            locale: controller.locale,
+            localizationsDelegates: craveLocalizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const AuthScreen(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Create an account'));
+    await tester.pumpAndSettle();
+
+    final createBtn = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Create account'),
+    );
+    expect(createBtn.onPressed, isNull);
+
+    await tester.tap(find.text('Terms and Conditions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Terms & Conditions'), findsOneWidget);
+    expect(find.textContaining('[COMPLETAR: correo de contacto]'), findsOneWidget);
+
+    await tester.tap(find.text('Accept Terms'));
+    await tester.pumpAndSettle();
+
+    final enabledBtn = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Create account'),
+    );
+    expect(enabledBtn.onPressed, isNotNull);
+
+    await controller.setLocale(const Locale('es'));
+    await tester.pumpAndSettle();
+    expect(find.text('Crear cuenta'), findsOneWidget);
+    expect(find.text('Términos y Condiciones'), findsOneWidget);
   });
 }
