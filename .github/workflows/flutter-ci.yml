@@ -2,7 +2,7 @@ name: Flutter CI
 
 on:
   push:
-    branches: [develop, main]
+    branches: [develop, main, feature/av2-premium-flutter]
   pull_request:
     branches: [develop, main]
 
@@ -24,4 +24,8 @@ jobs:
         run: flutter analyze
       - name: Test
         run: flutter test
+      - name: Build web release for Render
+        run: >-
+          flutter build web --release --base-href /
+          --dart-define=API_BASE_URL=https://cravewallet-api.onrender.com
 

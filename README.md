@@ -13,13 +13,15 @@ Migración multiplataforma de CraveWallet desde Kotlin/Jetpack Compose a Flutter
 
 ## Despliegue web
 
-La versión web se publica mediante GitHub Actions en:
+La versión web está preparada como sitio estático de Render con `render.yaml`.
+También se puede configurar en el panel como **Static Site** desde la rama
+`feature/av2-premium-flutter`, con `bash scripts/build-render.sh` como comando
+de compilación y `build/web` como directorio de publicación.
 
-<https://1acc0238-2620-4950-gastify-cravewallet.github.io/CraveWallet-Flutter/>
-
-El workflow compila con el `base-href` del repositorio y fija el API de Render
-mediante `API_BASE_URL`. El backend admite únicamente el origen HTTPS exacto de
-GitHub Pages configurado en `FLUTTER_WEB_ORIGIN`.
+Define `API_BASE_URL` con la URL HTTPS pública del backend. Una vez creado el
+sitio, configura `FLUTTER_WEB_ORIGIN` en el backend con el origen exacto que
+asigne Render (sin ruta ni barra final) y redespliega el API. Solo el backend
+se conecta a PostgreSQL; las credenciales de base nunca van en el sitio web.
 
 ## Ejecución
 

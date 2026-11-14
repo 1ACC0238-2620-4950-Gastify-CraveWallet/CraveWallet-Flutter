@@ -14,3 +14,4 @@ ios/Pods/
 .idea/
 .vscode/
 
+.render-flutter-sdk/
