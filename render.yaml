@@ -7,4 +7,4 @@ services:
     staticPublishPath: ./build/web
     envVars:
       - key: API_BASE_URL
-        value: https://cravewallet-api.onrender.com
+        value: https://cravewallet-api-av2.onrender.com

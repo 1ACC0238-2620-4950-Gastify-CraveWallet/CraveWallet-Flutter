@@ -27,5 +27,5 @@ jobs:
       - name: Build web release for Render
         run: >-
           flutter build web --release --base-href /
-          --dart-define=API_BASE_URL=https://cravewallet-api.onrender.com
+          --dart-define=API_BASE_URL=https://cravewallet-api-av2.onrender.com
 

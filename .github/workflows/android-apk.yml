@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      API_BASE_URL: https://cravewallet-api.onrender.com
+      API_BASE_URL: https://cravewallet-api-av2.onrender.com
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
