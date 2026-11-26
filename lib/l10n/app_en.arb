@@ -198,6 +198,37 @@
   "categoryLabel": "Category",
   "defaultDeliveryCategory": "Food",
   "invalidDeliveryExpense": "Complete merchant, category, and a positive amount.",
+  "exchangeRateHistoryTitle": "Exchange rate history",
+  "noExchangeRateHistory": "No previous charges with a stored exchange rate yet.",
+  "exchangeRateHistoryUnavailable": "Could not load the exchange rate history.",
+  "rateVariationUp": "Rate up {percent}% vs previous charge",
+  "@rateVariationUp": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "rateVariationDown": "Rate down {percent}% vs previous charge",
+  "@rateVariationDown": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "rateVariationUnchanged": "Same rate as the previous charge",
+  "conversionCycleLine": "Rate {rate} · {amount}",
+  "@conversionCycleLine": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "saveExpense": "Save expense",
   "newSubscription": "New subscription",
   "nameLabel": "Name",

@@ -653,6 +653,8 @@ class _SubscriptionActions extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(item.notes),
               ),
+            if (item.currency == Currency.usd && controller.connected)
+              _ExchangeRateHistoryCard(item: item, controller: controller),
             const SizedBox(height: 12),
             if (controller.reminders.calendarEnabled && !item.cancelled)
               OutlinedButton.icon(
@@ -707,6 +709,107 @@ class _SubscriptionActions extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ExchangeRateHistoryCard extends StatefulWidget {
+  const _ExchangeRateHistoryCard({required this.item, required this.controller});
+  final Subscription item;
+  final AppController controller;
+  @override
+  State<_ExchangeRateHistoryCard> createState() =>
+      _ExchangeRateHistoryCardState();
+}
+
+class _ExchangeRateHistoryCardState extends State<_ExchangeRateHistoryCard> {
+  late final Future<ExchangeRateHistory> history =
+      widget.controller.exchangeRateHistory(widget.item.id);
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10nOf(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: FutureBuilder<ExchangeRateHistory>(
+            future: history,
+            builder: (context, snapshot) {
+              final children = <Widget>[
+                Text(
+                  l10n.exchangeRateHistoryTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+              ];
+              if (snapshot.connectionState != ConnectionState.done) {
+                children.add(const LinearProgressIndicator());
+              } else if (snapshot.hasError || snapshot.data == null) {
+                children.add(Text(l10n.exchangeRateHistoryUnavailable));
+              } else {
+                final data = snapshot.data!;
+                if (data.cycles.isEmpty) {
+                  children.add(Text(l10n.noExchangeRateHistory));
+                } else {
+                  final variation = _variationText(l10n, data);
+                  if (variation != null) {
+                    children.add(
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          variation,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: data.direction == RateDirection.up
+                                ? CraveColors.error
+                                : data.direction == RateDirection.down
+                                    ? CraveColors.success
+                                    : null,
+                          ),
+                        ),
+                      ),
+                    );
+                    children.add(const SizedBox(height: 6));
+                  }
+                  for (final cycle in data.cycles.reversed) {
+                    children.add(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(_formatShortDate(cycle.billingDate, l10n.localeName)),
+                          Text(
+                            l10n.conversionCycleLine(
+                              cycle.rate.toStringAsFixed(3),
+                              _formatMoney(cycle.amountPen, l10n.localeName),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _variationText(AppLocalizations l10n, ExchangeRateHistory data) {
+    final percent = data.percentChange;
+    if (percent == null || data.direction == null) return null;
+    final value = percent.abs().toStringAsFixed(2);
+    return switch (data.direction!) {
+      RateDirection.up => l10n.rateVariationUp(value),
+      RateDirection.down => l10n.rateVariationDown(value),
+      RateDirection.unchanged => l10n.rateVariationUnchanged,
+    };
   }
 }
 

@@ -378,6 +378,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'Complete merchant, category, and a positive amount.';
 
   @override
+  String get exchangeRateHistoryTitle => 'Exchange rate history';
+
+  @override
+  String get noExchangeRateHistory => 'No previous charges with a stored exchange rate yet.';
+
+  @override
+  String get exchangeRateHistoryUnavailable => 'Could not load the exchange rate history.';
+
+  @override
+  String rateVariationUp(String percent) {
+    return 'Rate up $percent% vs previous charge';
+  }
+
+  @override
+  String rateVariationDown(String percent) {
+    return 'Rate down $percent% vs previous charge';
+  }
+
+  @override
+  String get rateVariationUnchanged => 'Same rate as the previous charge';
+
+  @override
+  String conversionCycleLine(String rate, String amount) {
+    return 'Rate $rate · $amount';
+  }
+
+  @override
   String get saveExpense => 'Save expense';
 
   @override

@@ -443,6 +443,14 @@ class AppController extends ChangeNotifier {
         },
       );
 
+  Future<ExchangeRateHistory> exchangeRateHistory(String subscriptionId) async =>
+      ExchangeRateHistory.fromJson(
+        await api.request(
+          'GET',
+          '/api/v1/subscriptions/$subscriptionId/exchange-rate-history',
+        ),
+      );
+
   Future<bool> updateReminders(ReminderSettings value) async {
     if (value.pushEnabled && !reminders.pushEnabled) {
       final granted = await reminderService.requestNotificationPermission();

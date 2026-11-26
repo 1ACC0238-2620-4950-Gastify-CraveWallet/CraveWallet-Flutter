@@ -379,6 +379,33 @@ class AppLocalizationsEs extends AppLocalizations {
       'Completa comercio, categoría y monto positivo.';
 
   @override
+  String get exchangeRateHistoryTitle => 'Historial del tipo de cambio';
+
+  @override
+  String get noExchangeRateHistory => 'Aún no hay cobros anteriores con tipo de cambio registrado.';
+
+  @override
+  String get exchangeRateHistoryUnavailable => 'No se pudo cargar el historial del tipo de cambio.';
+
+  @override
+  String rateVariationUp(String percent) {
+    return 'El tipo de cambio subió $percent% respecto al cobro anterior';
+  }
+
+  @override
+  String rateVariationDown(String percent) {
+    return 'El tipo de cambio bajó $percent% respecto al cobro anterior';
+  }
+
+  @override
+  String get rateVariationUnchanged => 'Mismo tipo de cambio que el cobro anterior';
+
+  @override
+  String conversionCycleLine(String rate, String amount) {
+    return 'Tipo de cambio $rate · $amount';
+  }
+
+  @override
   String get saveExpense => 'Guardar gasto';
 
   @override

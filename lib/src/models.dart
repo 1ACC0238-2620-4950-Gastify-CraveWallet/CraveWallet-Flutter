@@ -208,3 +208,54 @@ class ReminderSettings {
 extension FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
+
+class ConversionCycle {
+  const ConversionCycle({
+    required this.billingDate,
+    required this.rate,
+    required this.amountPen,
+  });
+
+  factory ConversionCycle.fromJson(Map<String, dynamic> json) => ConversionCycle(
+        billingDate:
+            DateTime.tryParse('${json['billingDate']}') ?? DateTime.now(),
+        rate: (json['rate'] as num?)?.toDouble() ?? 0,
+        amountPen: (json['amountPen'] as num?)?.toDouble() ?? 0,
+      );
+
+  final DateTime billingDate;
+  final double rate;
+  final double amountPen;
+}
+
+enum RateDirection { up, down, unchanged }
+
+class ExchangeRateHistory {
+  const ExchangeRateHistory({
+    required this.cycles,
+    this.percentChange,
+    this.direction,
+  });
+
+  factory ExchangeRateHistory.fromJson(Map<String, dynamic> json) {
+    final cycles = (json['cycles'] as List? ?? const [])
+        .whereType<Map>()
+        .map((item) => ConversionCycle.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+    final variation = json['variation'];
+    if (variation is! Map) return ExchangeRateHistory(cycles: cycles);
+    return ExchangeRateHistory(
+      cycles: cycles,
+      percentChange: (variation['percentChange'] as num?)?.toDouble(),
+      direction: switch ('${variation['direction']}') {
+        'UP' => RateDirection.up,
+        'DOWN' => RateDirection.down,
+        _ => RateDirection.unchanged,
+      },
+    );
+  }
+
+  final List<ConversionCycle> cycles;
+  final double? percentChange;
+  final RateDirection? direction;
+}
