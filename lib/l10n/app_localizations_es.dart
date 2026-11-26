@@ -379,6 +379,30 @@ class AppLocalizationsEs extends AppLocalizations {
       'Completa comercio, categoría y monto positivo.';
 
   @override
+  String get expensesOfMonth => 'Gastos del mes';
+
+  @override
+  String get noDeliveryExpenses => 'No hay gastos de delivery este mes.';
+
+  @override
+  String get editExpense => 'Editar gasto';
+
+  @override
+  String get deleteExpense => 'Eliminar gasto';
+
+  @override
+  String get deleteExpenseConfirm => '¿Eliminar este gasto? Se actualizará el total del mes.';
+
+  @override
+  String get expenseDateLabel => 'Fecha del gasto';
+
+  @override
+  String get saveChanges => 'Guardar cambios';
+
+  @override
+  String get cancelAction => 'Cancelar';
+
+  @override
   String get saveExpense => 'Guardar gasto';
 
   @override

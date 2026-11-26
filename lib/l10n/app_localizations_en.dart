@@ -378,6 +378,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Complete merchant, category, and a positive amount.';
 
   @override
+  String get expensesOfMonth => 'Expenses this month';
+
+  @override
+  String get noDeliveryExpenses => 'No delivery expenses this month.';
+
+  @override
+  String get editExpense => 'Edit expense';
+
+  @override
+  String get deleteExpense => 'Delete expense';
+
+  @override
+  String get deleteExpenseConfirm => 'Delete this expense? The monthly total will be updated.';
+
+  @override
+  String get expenseDateLabel => 'Expense date';
+
+  @override
+  String get saveChanges => 'Save changes';
+
+  @override
+  String get cancelAction => 'Cancel';
+
+  @override
   String get saveExpense => 'Save expense';
 
   @override

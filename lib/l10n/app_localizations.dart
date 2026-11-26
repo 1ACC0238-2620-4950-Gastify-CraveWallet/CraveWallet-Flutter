@@ -770,6 +770,54 @@ abstract class AppLocalizations {
   /// **'Complete merchant, category, and a positive amount.'**
   String get invalidDeliveryExpense;
 
+  /// No description provided for @expensesOfMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses this month'**
+  String get expensesOfMonth;
+
+  /// No description provided for @noDeliveryExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'No delivery expenses this month.'**
+  String get noDeliveryExpenses;
+
+  /// No description provided for @editExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit expense'**
+  String get editExpense;
+
+  /// No description provided for @deleteExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete expense'**
+  String get deleteExpense;
+
+  /// No description provided for @deleteExpenseConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this expense? The monthly total will be updated.'**
+  String get deleteExpenseConfirm;
+
+  /// No description provided for @expenseDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense date'**
+  String get expenseDateLabel;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get saveChanges;
+
+  /// No description provided for @cancelAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelAction;
+
   /// No description provided for @saveExpense.
   ///
   /// In en, this message translates to:
