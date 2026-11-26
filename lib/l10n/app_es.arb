@@ -307,5 +307,12 @@
   "errSessionChanged": "La sesión cambió. Vuelve a intentarlo.",
   "errPremiumNotSupported": "Premium aún no está disponible en este servidor.",
   "errPremiumQueryFailed": "No se pudo consultar Premium. Vuelve a intentarlo.",
-  "errUnsupportedSubscription": "El servidor admite PEN/USD y frecuencia mensual/anual."
+  "errUnsupportedSubscription": "El servidor admite PEN/USD y frecuencia mensual/anual.",
+  "exchangeRateHistoryTitle": "Historial del tipo de cambio",
+  "noExchangeRateHistory": "Aún no hay cobros anteriores con tipo de cambio registrado.",
+  "exchangeRateHistoryUnavailable": "No se pudo cargar el historial del tipo de cambio.",
+  "rateVariationUp": "El tipo de cambio subió {percent}% respecto al cobro anterior",
+  "rateVariationDown": "El tipo de cambio bajó {percent}% respecto al cobro anterior",
+  "rateVariationUnchanged": "Mismo tipo de cambio que el cobro anterior",
+  "conversionCycleLine": "Tipo de cambio {rate} · {amount}"
 }

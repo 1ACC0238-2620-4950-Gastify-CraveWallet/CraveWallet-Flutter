@@ -390,7 +390,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteExpense => 'Delete expense';
 
   @override
-  String get deleteExpenseConfirm => 'Delete this expense? The monthly total will be updated.';
+  String get deleteExpenseConfirm =>
+      'Delete this expense? The monthly total will be updated.';
 
   @override
   String get expenseDateLabel => 'Expense date';
@@ -615,4 +616,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errUnsupportedSubscription =>
       'The server supports PEN/USD and monthly/annual frequency.';
+
+  @override
+  String get exchangeRateHistoryTitle => 'Exchange rate history';
+
+  @override
+  String get noExchangeRateHistory =>
+      'No previous charges with a stored exchange rate yet.';
+
+  @override
+  String get exchangeRateHistoryUnavailable =>
+      'Could not load the exchange rate history.';
+
+  @override
+  String rateVariationUp(String percent) {
+    return 'Rate up $percent% vs previous charge';
+  }
+
+  @override
+  String rateVariationDown(String percent) {
+    return 'Rate down $percent% vs previous charge';
+  }
+
+  @override
+  String get rateVariationUnchanged => 'Same rate as the previous charge';
+
+  @override
+  String conversionCycleLine(String rate, String amount) {
+    return 'Rate $rate · $amount';
+  }
 }

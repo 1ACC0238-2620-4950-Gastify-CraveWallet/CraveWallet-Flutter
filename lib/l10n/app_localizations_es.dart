@@ -391,7 +391,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deleteExpense => 'Eliminar gasto';
 
   @override
-  String get deleteExpenseConfirm => '¿Eliminar este gasto? Se actualizará el total del mes.';
+  String get deleteExpenseConfirm =>
+      '¿Eliminar este gasto? Se actualizará el total del mes.';
 
   @override
   String get expenseDateLabel => 'Fecha del gasto';
@@ -618,4 +619,34 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get errUnsupportedSubscription =>
       'El servidor admite PEN/USD y frecuencia mensual/anual.';
+
+  @override
+  String get exchangeRateHistoryTitle => 'Historial del tipo de cambio';
+
+  @override
+  String get noExchangeRateHistory =>
+      'Aún no hay cobros anteriores con tipo de cambio registrado.';
+
+  @override
+  String get exchangeRateHistoryUnavailable =>
+      'No se pudo cargar el historial del tipo de cambio.';
+
+  @override
+  String rateVariationUp(String percent) {
+    return 'El tipo de cambio subió $percent% respecto al cobro anterior';
+  }
+
+  @override
+  String rateVariationDown(String percent) {
+    return 'El tipo de cambio bajó $percent% respecto al cobro anterior';
+  }
+
+  @override
+  String get rateVariationUnchanged =>
+      'Mismo tipo de cambio que el cobro anterior';
+
+  @override
+  String conversionCycleLine(String rate, String amount) {
+    return 'Tipo de cambio $rate · $amount';
+  }
 }

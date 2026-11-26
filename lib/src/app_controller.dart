@@ -471,6 +471,14 @@ class AppController extends ChangeNotifier {
   Future<void> deleteDeliveryExpense(String id) =>
       api.request('DELETE', '/api/v1/delivery-expenses/$id');
 
+  Future<ExchangeRateHistory> exchangeRateHistory(String subscriptionId) async =>
+      ExchangeRateHistory.fromJson(
+        await api.request(
+          'GET',
+          '/api/v1/subscriptions/$subscriptionId/exchange-rate-history',
+        ),
+      );
+
   Future<bool> updateReminders(ReminderSettings value) async {
     if (value.pushEnabled && !reminders.pushEnabled) {
       final granted = await reminderService.requestNotificationPermission();

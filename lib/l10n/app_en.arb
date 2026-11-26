@@ -307,5 +307,36 @@
   "errSessionChanged": "Session changed. Please try again.",
   "errPremiumNotSupported": "Premium is not yet available on this server.",
   "errPremiumQueryFailed": "Could not check Premium status. Please try again.",
-  "errUnsupportedSubscription": "The server supports PEN/USD and monthly/annual frequency."
+  "errUnsupportedSubscription": "The server supports PEN/USD and monthly/annual frequency.",
+  "exchangeRateHistoryTitle": "Exchange rate history",
+  "noExchangeRateHistory": "No previous charges with a stored exchange rate yet.",
+  "exchangeRateHistoryUnavailable": "Could not load the exchange rate history.",
+  "rateVariationUp": "Rate up {percent}% vs previous charge",
+  "@rateVariationUp": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "rateVariationDown": "Rate down {percent}% vs previous charge",
+  "@rateVariationDown": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "rateVariationUnchanged": "Same rate as the previous charge",
+  "conversionCycleLine": "Rate {rate} · {amount}",
+  "@conversionCycleLine": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }
