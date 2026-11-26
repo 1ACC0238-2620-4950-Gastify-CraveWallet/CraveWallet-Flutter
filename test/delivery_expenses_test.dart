@@ -27,7 +27,9 @@ void main() {
       final path = request.url.path;
       if (path == '/api/v1/users/me') return _json({'email': 'test@example.com'});
       if (path == '/api/v1/subscriptions') return _json({'items': []});
-      calls.add('${request.method} ${request.url.path}?${request.url.query}');
+      if (path.startsWith('/api/v1/delivery-expenses')) {
+        calls.add('${request.method} ${request.url.path}?${request.url.query}');
+      }
       if (request.method == 'GET' && path == '/api/v1/delivery-expenses') {
         return _json([
           {
