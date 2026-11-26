@@ -11,6 +11,18 @@ Migración multiplataforma de CraveWallet desde Kotlin/Jetpack Compose a Flutter
 - Persistencia de la sesión mediante `shared_preferences`.
 - Integración con `https://cravewallet-api.onrender.com` mediante el mismo contrato REST de la aplicación Android.
 
+## Despliegue web
+
+La versión web está preparada como sitio estático de Render con `render.yaml`.
+También se puede configurar en el panel como **Static Site** desde la rama
+`feature/av2-premium-flutter`, con `bash scripts/build-render.sh` como comando
+de compilación y `build/web` como directorio de publicación.
+
+Define `API_BASE_URL` con la URL HTTPS pública del backend. Una vez creado el
+sitio, configura `FLUTTER_WEB_ORIGIN` en el backend con el origen exacto que
+asigne Render (sin ruta ni barra final) y redespliega el API. Solo el backend
+se conecta a PostgreSQL; las credenciales de base nunca van en el sitio web.
+
 ## Ejecución
 
 ```bash

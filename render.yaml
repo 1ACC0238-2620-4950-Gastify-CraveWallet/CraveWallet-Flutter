@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: cravewallet-flutter
+    runtime: static
+    branch: feature/av2-premium-flutter
+    buildCommand: bash scripts/build-render.sh
+    staticPublishPath: ./build/web
+    envVars:
+      - key: API_BASE_URL
+        value: https://cravewallet-api.onrender.com
