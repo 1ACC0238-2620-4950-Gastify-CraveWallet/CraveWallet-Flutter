@@ -3,40 +3,48 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/app_localizations_en.dart';
 import 'app_controller.dart';
 import 'premium_models.dart';
 import 'theme.dart';
 
-String formatPremiumPrice(double price, {String currency = 'PEN'}) =>
+String formatPremiumPrice(
+  double price, {
+  String currency = 'PEN',
+  String locale = 'en',
+}) =>
     NumberFormat.currency(
-      locale: 'es_PE',
-      symbol: currency == 'PEN' ? 'S/' : currency,
+      locale: locale == 'es' ? 'es_PE' : 'en_US',
+      symbol: currency == 'PEN' ? 'S/ ' : '$currency ',
       decimalDigits: 2,
     ).format(price);
 
-String premiumPlanLabel(AppController controller) {
+String premiumPlanLabel(AppController controller, [AppLocalizations? l10n]) {
+  final strings = l10n ?? controller.l10n;
   final status = controller.premiumStatus;
-  if (status?.pending == true) return 'Pago pendiente de confirmación';
+  if (status?.pending == true) return strings.premiumPendingConfirmation;
   if (status?.periodEndsAt case final date?) {
     if (controller.profile.premium) {
-      final formattedDate = _formatDate(date);
+      final formattedDate =
+          _formatDate(date, locale: strings.localeName);
       return status?.cancelAtPeriodEnd == true
-          ? 'Acceso hasta el $formattedDate'
-          : 'Período pagado hasta el $formattedDate';
+          ? strings.premiumAccessUntil(formattedDate)
+          : strings.premiumPaidUntil(formattedDate);
     }
   }
-  if (controller.profile.premium) return 'Plan Premium activo';
+  if (controller.profile.premium) return strings.premiumActive;
   if (status == null && controller.connected) {
     return controller.premiumBusy
-        ? 'Consultando tu plan…'
-        : 'Estado del plan por confirmar';
+        ? strings.premiumChecking
+        : strings.premiumUnconfirmed;
   }
-  return 'Plan gratuito';
+  return strings.premiumFreePlan;
 }
 
-String _formatDate(DateTime date) {
+String _formatDate(DateTime date, {String locale = 'en'}) {
   final limaDate = date.toUtc().subtract(const Duration(hours: 5));
-  return DateFormat('dd/MM/yyyy').format(limaDate);
+  return DateFormat.yMd(locale).format(limaDate);
 }
 
 void showPremium(BuildContext context) {
@@ -59,6 +67,9 @@ class _PremiumScreenState extends State<PremiumScreen>
   Uri? _checkoutPage;
   bool _showPayments = false;
   List<PremiumPayment>? _payments;
+
+  AppLocalizations get _l10n =>
+      AppLocalizations.of(context) ?? AppLocalizationsEn();
 
   @override
   void initState() {
@@ -98,12 +109,12 @@ class _PremiumScreenState extends State<PremiumScreen>
       setState(() => _awaitingCheckout = true);
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (mounted && !opened) {
-        _message('No se pudo abrir el navegador para continuar el pago.');
+        _message(_l10n.premiumBrowserFailed);
         setState(() => _awaitingCheckout = false);
       }
     } catch (_) {
       if (mounted) setState(() => _awaitingCheckout = false);
-      _message(_controller.premiumError ?? 'No se pudo abrir el pago.');
+      _message(_controller.premiumError ?? _l10n.premiumPaymentOpenFailed);
     } finally {
       if (mounted) setState(() => _openingCheckout = false);
     }
@@ -116,29 +127,28 @@ class _PremiumScreenState extends State<PremiumScreen>
       if (opened) {
         setState(() => _awaitingCheckout = true);
       } else {
-        _message('No se pudo abrir Mercado Pago en otra pestaña.');
+        _message(_l10n.premiumTabOpenFailed);
       }
     } catch (_) {
-      _message('No se pudo abrir Mercado Pago en otra pestaña.');
+      _message(_l10n.premiumTabOpenFailed);
     }
   }
 
   Future<void> _cancel() async {
+    final l10n = _l10n;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('¿Cancelar la renovación?'),
-        content: const Text(
-          'Conservarás el acceso Premium hasta el fin del período pagado.',
-        ),
+        title: Text(l10n.premiumCancelDialogTitle),
+        content: Text(l10n.premiumCancelDialogContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Volver'),
+            child: Text(l10n.backButton),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancelar renovación'),
+            child: Text(l10n.premiumCancelRenewal),
           ),
         ],
       ),
@@ -146,11 +156,9 @@ class _PremiumScreenState extends State<PremiumScreen>
     if (!mounted || confirmed != true || _controller.premiumBusy) return;
     try {
       await _controller.cancelPremium();
-      _message('Renovación cancelada.');
+      _message(_l10n.premiumRenewalCancelled);
     } catch (_) {
-      _message(
-        _controller.premiumError ?? 'No se pudo cancelar la renovación.',
-      );
+      _message(_controller.premiumError ?? _l10n.premiumCancelFailed);
     }
   }
 
@@ -160,7 +168,7 @@ class _PremiumScreenState extends State<PremiumScreen>
       final payments = await _controller.loadPremiumPayments();
       if (mounted) setState(() => _payments = payments);
     } catch (_) {
-      _message(_controller.premiumError ?? 'No se pudo cargar el historial.');
+      _message(_controller.premiumError ?? _l10n.premiumHistoryFailed);
     }
   }
 
@@ -172,6 +180,7 @@ class _PremiumScreenState extends State<PremiumScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _l10n;
     final status = _controller.premiumStatus;
     final busy = _controller.premiumBusy || _openingCheckout;
     final pending = status?.pending == true;
@@ -181,15 +190,15 @@ class _PremiumScreenState extends State<PremiumScreen>
       checkoutPage,
       pending || _awaitingCheckout,
     )) {
-      (Uri(), _) => 'Abrir Mercado Pago',
-      (_, true) => 'Continuar pago',
-      _ when kIsWeb => 'Preparar pago',
-      _ => 'Ir a Mercado Pago',
+      (Uri(), _) => l10n.premiumOpenMercadoPago,
+      (_, true) => l10n.premiumContinuePayment,
+      _ when kIsWeb => l10n.premiumPreparePayment,
+      _ => l10n.premiumGoToMercadoPago,
     };
     return Scaffold(
-      appBar: AppBar(title: const Text('CraveWallet Premium')),
+      appBar: AppBar(title: Text(l10n.premiumTitle)),
       body: !_controller.connected && _controller.accessMode != AccessMode.demo
-          ? const Center(child: Text('Inicia sesión para consultar tu plan.'))
+          ? Center(child: Text(l10n.premiumSignInToCheck))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -206,36 +215,37 @@ class _PremiumScreenState extends State<PremiumScreen>
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          premiumPlanLabel(_controller),
+                          premiumPlanLabel(_controller, l10n),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${formatPremiumPrice(_controller.premiumPrice)} al mes',
+                          l10n.premiumPricePerMonth(
+                            formatPremiumPrice(
+                              _controller.premiumPrice,
+                              locale: l10n.localeName,
+                            ),
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 12),
                         const PremiumBenefits(),
                         const SizedBox(height: 16),
                         if (!_controller.connected)
-                          const Text('Inicia sesión para contratar Premium.')
+                          Text(l10n.premiumSignInToSubscribe)
                         else ...[
                           if (pending)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                'Estamos esperando la confirmación de Mercado Pago.',
-                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(l10n.analysisPendingConfirmation),
                             ),
                           if (!pending &&
                               _awaitingCheckout &&
                               !_controller.profile.premium)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                'Si completaste el pago, actualiza el estado para comprobarlo.',
-                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(l10n.premiumCompletedCheckStatus),
                             ),
                           if (_controller.premiumError case final error?)
                             Padding(
@@ -247,8 +257,8 @@ class _PremiumScreenState extends State<PremiumScreen>
                               onPressed: busy
                                   ? null
                                   : () => checkoutPage == null
-                                        ? _checkout()
-                                        : _openWebCheckout(checkoutPage),
+                                      ? _checkout()
+                                      : _openWebCheckout(checkoutPage),
                               icon: const Icon(Icons.open_in_new),
                               label: Text(checkoutLabel),
                             ),
@@ -256,11 +266,11 @@ class _PremiumScreenState extends State<PremiumScreen>
                               status?.cancelAtPeriodEnd == false)
                             OutlinedButton(
                               onPressed: busy ? null : _cancel,
-                              child: const Text('Cancelar renovación'),
+                              child: Text(l10n.premiumCancelRenewal),
                             ),
                           TextButton(
                             onPressed: busy ? null : _controller.refreshPremium,
-                            child: const Text('Actualizar estado'),
+                            child: Text(l10n.premiumRefreshStatus),
                           ),
                         ],
                       ],
@@ -273,12 +283,12 @@ class _PremiumScreenState extends State<PremiumScreen>
                     onPressed: busy ? null : _loadPayments,
                     child: Text(
                       _showPayments
-                          ? 'Actualizar historial de pagos'
-                          : 'Ver historial de pagos',
+                          ? l10n.premiumRefreshHistory
+                          : l10n.premiumViewHistory,
                     ),
                   ),
                   if (payments != null && payments.isEmpty)
-                    const ListTile(title: Text('Todavía no hay pagos.')),
+                    ListTile(title: Text(l10n.premiumNoPayments)),
                   if (payments != null)
                     for (final payment in payments)
                       ListTile(
@@ -286,11 +296,16 @@ class _PremiumScreenState extends State<PremiumScreen>
                           formatPremiumPrice(
                             payment.amount,
                             currency: payment.currency,
+                            locale: l10n.localeName,
                           ),
                         ),
-                        subtitle: Text(_formatDate(payment.date)),
+                        subtitle: Text(
+                          _formatDate(payment.date, locale: l10n.localeName),
+                        ),
                         trailing: Text(
-                          payment.approved ? 'Aprobado' : 'Rechazado',
+                          payment.approved
+                              ? l10n.premiumApproved
+                              : l10n.premiumRejected,
                         ),
                       ),
                 ],
@@ -307,30 +322,34 @@ class PremiumBenefits extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context) ?? AppLocalizationsEn();
     final subscriptionBenefit = subscriptionCount == null
-        ? 'Suscripciones sin límite'
-        : 'Suscripciones sin límite (hoy: $subscriptionCount de ${PremiumStatus.freeSubscriptionLimit})';
+        ? l10n.premiumBenefitUnlimited
+        : l10n.premiumBenefitUnlimitedWithCount(
+            subscriptionCount!,
+            PremiumStatus.freeSubscriptionLimit,
+          );
     return Column(
       children: [
-        _benefit('Gasto mensual y por categoría en soles'),
-        _benefit('Mapa de calor de los próximos cobros'),
+        _benefit(l10n.premiumBenefitMonthlySpend),
+        _benefit(l10n.premiumBenefitHeatmap),
         _benefit(subscriptionBenefit),
       ],
     );
   }
 
   Widget _benefit(String text) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 5),
-    child: Row(
-      children: [
-        const Icon(
-          Icons.check_circle_outline,
-          size: 20,
-          color: CraveColors.success,
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              size: 20,
+              color: CraveColors.success,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(text)),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(child: Text(text)),
-      ],
-    ),
-  );
+      );
 }
