@@ -443,6 +443,34 @@ class AppController extends ChangeNotifier {
         },
       );
 
+  Future<List<DeliveryExpenseRecord>> deliveryExpenses(int year, int month) async {
+    final data = await api.request(
+      'GET',
+      '/api/v1/delivery-expenses?year=$year&month=$month',
+    );
+    final items = data['items'];
+    if (items is! List) return const [];
+    return items
+        .whereType<Map>()
+        .map((item) => DeliveryExpenseRecord.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  Future<void> correctDeliveryExpense(DeliveryExpenseRecord expense) =>
+      api.request(
+        'PUT',
+        '/api/v1/delivery-expenses/${expense.id}',
+        body: {
+          'merchant': expense.merchant,
+          'amount': expense.amount,
+          'category': expense.category,
+          'expenseDate': _date(expense.date),
+        },
+      );
+
+  Future<void> deleteDeliveryExpense(String id) =>
+      api.request('DELETE', '/api/v1/delivery-expenses/$id');
+
   Future<bool> updateReminders(ReminderSettings value) async {
     if (value.pushEnabled && !reminders.pushEnabled) {
       final granted = await reminderService.requestNotificationPermission();

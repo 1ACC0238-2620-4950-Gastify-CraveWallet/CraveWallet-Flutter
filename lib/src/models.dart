@@ -208,3 +208,42 @@ class ReminderSettings {
 extension FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
+
+class DeliveryExpenseRecord {
+  const DeliveryExpenseRecord({
+    required this.id,
+    required this.merchant,
+    required this.amount,
+    required this.category,
+    required this.date,
+  });
+
+  factory DeliveryExpenseRecord.fromJson(Map<String, dynamic> json) =>
+      DeliveryExpenseRecord(
+        id: '${json['id']}',
+        merchant: '${json['merchant'] ?? ''}',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0,
+        category: '${json['category'] ?? ''}',
+        date: DateTime.tryParse('${json['expenseDate']}') ?? DateTime.now(),
+      );
+
+  final String id;
+  final String merchant;
+  final double amount;
+  final String category;
+  final DateTime date;
+
+  DeliveryExpenseRecord copyWith({
+    String? merchant,
+    double? amount,
+    String? category,
+    DateTime? date,
+  }) =>
+      DeliveryExpenseRecord(
+        id: id,
+        merchant: merchant ?? this.merchant,
+        amount: amount ?? this.amount,
+        category: category ?? this.category,
+        date: date ?? this.date,
+      );
+}

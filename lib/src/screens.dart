@@ -1173,6 +1173,7 @@ class DeliveryScreen extends StatefulWidget {
 class _DeliveryScreenState extends State<DeliveryScreen> {
   DateTime period = DateTime(DateTime.now().year, DateTime.now().month);
   Map<String, dynamic>? summary;
+  List<DeliveryExpenseRecord> expenses = const [];
   final merchant = TextEditingController();
   final amount = TextEditingController();
   final category = TextEditingController();
@@ -1207,11 +1208,14 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   Future<void> reload() async {
     setState(() => loading = true);
     try {
-      final data = await ControllerScope.of(context)
-          .deliverySummary(period.year, period.month);
+      final controller = ControllerScope.of(context);
+      final data = await controller.deliverySummary(period.year, period.month);
+      final records =
+          await controller.deliveryExpenses(period.year, period.month);
       if (mounted) {
         setState(() {
           summary = data;
+          expenses = records;
           limit.text = data['spendingLimit']?.toString() ?? '';
         });
       }
@@ -1393,9 +1397,171 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                   },
             child: Text(l10n.saveExpense),
           ),
+          const SizedBox(height: 22),
+          _SectionTitle(title: l10n.expensesOfMonth),
+          const SizedBox(height: 6),
+          if (expenses.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(l10n.noDeliveryExpenses),
+            )
+          else
+            ...expenses.map(
+              (expense) => Card(
+                child: ListTile(
+                  title: Text(expense.merchant),
+                  subtitle: Text(
+                    '${expense.category} · '
+                    '${DateFormat.yMMMd(l10n.localeName).format(expense.date)}',
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatMoney(expense.amount, l10n.localeName),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      IconButton(
+                        tooltip: l10n.editExpense,
+                        onPressed: loading ? null : () => _edit(expense),
+                        icon: const Icon(Icons.edit_outlined),
+                      ),
+                      IconButton(
+                        tooltip: l10n.deleteExpense,
+                        onPressed: loading ? null : () => _delete(expense),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _edit(DeliveryExpenseRecord expense) async {
+    final l10n = _l10nOf(context);
+    final controller = ControllerScope.of(context);
+    final merchantField = TextEditingController(text: expense.merchant);
+    final amountField =
+        TextEditingController(text: expense.amount.toStringAsFixed(2));
+    final categoryField = TextEditingController(text: expense.category);
+    var date = expense.date;
+    final corrected = await showDialog<DeliveryExpenseRecord>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text(l10n.editExpense),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: merchantField,
+                  decoration: InputDecoration(labelText: l10n.merchantLabel),
+                ),
+                TextField(
+                  controller: amountField,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: l10n.amountInPenLabel),
+                ),
+                TextField(
+                  controller: categoryField,
+                  decoration: InputDecoration(labelText: l10n.categoryLabel),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.event_outlined),
+                  label: Text(
+                    '${l10n.expenseDateLabel}: '
+                    '${DateFormat.yMMMd(l10n.localeName).format(date)}',
+                  ),
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: dialogContext,
+                      initialDate: date,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) setDialogState(() => date = picked);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(l10n.cancelAction),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value =
+                    double.tryParse(amountField.text.replaceAll(',', '.'));
+                if (merchantField.text.trim().isEmpty ||
+                    categoryField.text.trim().isEmpty ||
+                    value == null ||
+                    value <= 0) {
+                  _message(dialogContext, l10n.invalidDeliveryExpense);
+                  return;
+                }
+                Navigator.pop(
+                  dialogContext,
+                  expense.copyWith(
+                    merchant: merchantField.text.trim(),
+                    amount: value,
+                    category: categoryField.text.trim(),
+                    date: date,
+                  ),
+                );
+              },
+              child: Text(l10n.saveChanges),
+            ),
+          ],
+        ),
+      ),
+    );
+    merchantField.dispose();
+    amountField.dispose();
+    categoryField.dispose();
+    if (corrected == null || !mounted) return;
+    try {
+      await controller.correctDeliveryExpense(corrected);
+      await reload();
+    } catch (error) {
+      if (mounted) _message(context, '$error');
+    }
+  }
+
+  Future<void> _delete(DeliveryExpenseRecord expense) async {
+    final l10n = _l10nOf(context);
+    final controller = ControllerScope.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteExpense),
+        content: Text(l10n.deleteExpenseConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancelAction),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.deleteExpense),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await controller.deleteDeliveryExpense(expense.id);
+      await reload();
+    } catch (error) {
+      if (mounted) _message(context, '$error');
+    }
   }
 }
 
