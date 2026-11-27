@@ -1201,6 +1201,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server supports PEN/USD and monthly/annual frequency.'**
   String get errUnsupportedSubscription;
+
+  /// No description provided for @exchangeRateHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate history'**
+  String get exchangeRateHistoryTitle;
+
+  /// No description provided for @noExchangeRateHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No previous charges with a stored exchange rate yet.'**
+  String get noExchangeRateHistory;
+
+  /// No description provided for @exchangeRateHistoryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the exchange rate history.'**
+  String get exchangeRateHistoryUnavailable;
+
+  /// No description provided for @rateVariationUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate up {percent}% vs previous charge'**
+  String rateVariationUp(String percent);
+
+  /// No description provided for @rateVariationDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate down {percent}% vs previous charge'**
+  String rateVariationDown(String percent);
+
+  /// No description provided for @rateVariationUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Same rate as the previous charge'**
+  String get rateVariationUnchanged;
+
+  /// No description provided for @conversionCycleLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate {rate} · {amount}'**
+  String conversionCycleLine(String rate, String amount);
 }
 
 class _AppLocalizationsDelegate

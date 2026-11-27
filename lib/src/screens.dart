@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../l10n/app_localizations_en.dart';
 import 'app_controller.dart';
 import 'models.dart';
+import 'delivery_expense_dialog.dart';
 import 'premium_screen.dart';
 import 'theme.dart';
 
@@ -598,28 +599,20 @@ class SubscriptionTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         subtitle: Text(
-          '${item.category.localizedLabel(l10n)} · ${_formatShortDate(item.nextCharge, l10n.localeName)}$statusSuffix',
+          '${item.category.localizedLabel(l10n)} · ${_formatShortDate(item.nextCharge, l10n.localeName)} · ${item.frequency.localizedLabel(l10n)}$statusSuffix',
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${item.currency.symbol} ${item.amount.toStringAsFixed(2)}',
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            Text(
-              item.frequency.localizedLabel(l10n),
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ],
+        trailing: Text(
+          '${item.currency.symbol} ${item.amount.toStringAsFixed(2)}',
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
         onTap: detailed
             ? () => showModalBottomSheet(
                   context: context,
                   showDragHandle: true,
-                  builder: (_) =>
-                      _SubscriptionActions(item: item, controller: controller),
+                  isScrollControlled: true,
+                  builder: (_) => SingleChildScrollView(
+                    child: _SubscriptionActions(item: item, controller: controller),
+                  ),
                 )
             : null,
       ),
@@ -653,6 +646,8 @@ class _SubscriptionActions extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(item.notes),
               ),
+            if (item.currency == Currency.usd && controller.connected)
+              _ExchangeRateHistoryCard(item: item, controller: controller),
             const SizedBox(height: 12),
             if (controller.reminders.calendarEnabled && !item.cancelled)
               OutlinedButton.icon(
@@ -707,6 +702,107 @@ class _SubscriptionActions extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ExchangeRateHistoryCard extends StatefulWidget {
+  const _ExchangeRateHistoryCard({required this.item, required this.controller});
+  final Subscription item;
+  final AppController controller;
+  @override
+  State<_ExchangeRateHistoryCard> createState() =>
+      _ExchangeRateHistoryCardState();
+}
+
+class _ExchangeRateHistoryCardState extends State<_ExchangeRateHistoryCard> {
+  late final Future<ExchangeRateHistory> history =
+      widget.controller.exchangeRateHistory(widget.item.id);
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10nOf(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: FutureBuilder<ExchangeRateHistory>(
+            future: history,
+            builder: (context, snapshot) {
+              final children = <Widget>[
+                Text(
+                  l10n.exchangeRateHistoryTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+              ];
+              if (snapshot.connectionState != ConnectionState.done) {
+                children.add(const LinearProgressIndicator());
+              } else if (snapshot.hasError || snapshot.data == null) {
+                children.add(Text(l10n.exchangeRateHistoryUnavailable));
+              } else {
+                final data = snapshot.data!;
+                if (data.cycles.isEmpty) {
+                  children.add(Text(l10n.noExchangeRateHistory));
+                } else {
+                  final variation = _variationText(l10n, data);
+                  if (variation != null) {
+                    children.add(
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          variation,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: data.direction == RateDirection.up
+                                ? CraveColors.error
+                                : data.direction == RateDirection.down
+                                    ? CraveColors.success
+                                    : null,
+                          ),
+                        ),
+                      ),
+                    );
+                    children.add(const SizedBox(height: 6));
+                  }
+                  for (final cycle in data.cycles.reversed) {
+                    children.add(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_formatShortDate(cycle.billingDate, l10n.localeName)),
+                          Text(
+                            l10n.conversionCycleLine(
+                              cycle.rate.toStringAsFixed(3),
+                              _formatMoney(cycle.amountPen, l10n.localeName),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _variationText(AppLocalizations l10n, ExchangeRateHistory data) {
+    final percent = data.percentChange;
+    if (percent == null || data.direction == null) return null;
+    final value = percent.abs().toStringAsFixed(2);
+    return switch (data.direction!) {
+      RateDirection.up => l10n.rateVariationUp(value),
+      RateDirection.down => l10n.rateVariationDown(value),
+      RateDirection.unchanged => l10n.rateVariationUnchanged,
+    };
   }
 }
 
@@ -1179,6 +1275,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   final category = TextEditingController();
   final limit = TextEditingController();
   bool loading = false;
+  bool _mutating = false;
   bool _categoryInitialized = false;
 
   @override
@@ -1423,12 +1520,12 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                       ),
                       IconButton(
                         tooltip: l10n.editExpense,
-                        onPressed: loading ? null : () => _edit(expense),
+                        onPressed: loading || _mutating ? null : () => _edit(expense),
                         icon: const Icon(Icons.edit_outlined),
                       ),
                       IconButton(
                         tooltip: l10n.deleteExpense,
-                        onPressed: loading ? null : () => _delete(expense),
+                        onPressed: loading || _mutating ? null : () => _delete(expense),
                         icon: const Icon(Icons.delete_outline),
                       ),
                     ],
@@ -1442,125 +1539,54 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   }
 
   Future<void> _edit(DeliveryExpenseRecord expense) async {
-    final l10n = _l10nOf(context);
+    if (_mutating) return;
     final controller = ControllerScope.of(context);
-    final merchantField = TextEditingController(text: expense.merchant);
-    final amountField =
-        TextEditingController(text: expense.amount.toStringAsFixed(2));
-    final categoryField = TextEditingController(text: expense.category);
-    var date = expense.date;
-    final corrected = await showDialog<DeliveryExpenseRecord>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(l10n.editExpense),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: merchantField,
-                  decoration: InputDecoration(labelText: l10n.merchantLabel),
-                ),
-                TextField(
-                  controller: amountField,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: l10n.amountInPenLabel),
-                ),
-                TextField(
-                  controller: categoryField,
-                  decoration: InputDecoration(labelText: l10n.categoryLabel),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.event_outlined),
-                  label: Text(
-                    '${l10n.expenseDateLabel}: '
-                    '${DateFormat.yMMMd(l10n.localeName).format(date)}',
-                  ),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: dialogContext,
-                      initialDate: date,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) setDialogState(() => date = picked);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(l10n.cancelAction),
-            ),
-            FilledButton(
-              onPressed: () {
-                final value =
-                    double.tryParse(amountField.text.replaceAll(',', '.'));
-                if (merchantField.text.trim().isEmpty ||
-                    categoryField.text.trim().isEmpty ||
-                    value == null ||
-                    value <= 0) {
-                  _message(dialogContext, l10n.invalidDeliveryExpense);
-                  return;
-                }
-                Navigator.pop(
-                  dialogContext,
-                  expense.copyWith(
-                    merchant: merchantField.text.trim(),
-                    amount: value,
-                    category: categoryField.text.trim(),
-                    date: date,
-                  ),
-                );
-              },
-              child: Text(l10n.saveChanges),
-            ),
-          ],
-        ),
-      ),
-    );
-    merchantField.dispose();
-    amountField.dispose();
-    categoryField.dispose();
-    if (corrected == null || !mounted) return;
+    setState(() => _mutating = true);
     try {
+      final corrected = await showDialog<DeliveryExpenseRecord>(
+        context: context,
+        builder: (_) => DeliveryExpenseDialog(expense: expense),
+      );
+      if (corrected == null || !mounted) return;
       await controller.correctDeliveryExpense(corrected);
-      await reload();
+      if (mounted) await reload();
     } catch (error) {
       if (mounted) _message(context, '$error');
+    } finally {
+      if (mounted) setState(() => _mutating = false);
     }
   }
 
   Future<void> _delete(DeliveryExpenseRecord expense) async {
+    if (_mutating) return;
     final l10n = _l10nOf(context);
     final controller = ControllerScope.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteExpense),
-        content: Text(l10n.deleteExpenseConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.deleteExpense),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
+    setState(() => _mutating = true);
     try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.deleteExpense),
+          content: Text(l10n.deleteExpenseConfirm),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.cancelAction),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.deleteExpense),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
       await controller.deleteDeliveryExpense(expense.id);
-      await reload();
+      if (mounted) await reload();
     } catch (error) {
       if (mounted) _message(context, '$error');
+    } finally {
+      if (mounted) setState(() => _mutating = false);
     }
   }
 }
