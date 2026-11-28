@@ -74,14 +74,14 @@ jobs:
         env:
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS || 'testers' }}
+          FIREBASE_GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS || 'testers' }}
         run: |
           credentials="$RUNNER_TEMP/firebase-service-account.json"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$credentials"
           export GOOGLE_APPLICATION_CREDENTIALS="$credentials"
           npx --yes firebase-tools@13.29.1 appdistribution:distribute CraveWallet-Android.apk \
             --app "$FIREBASE_APP_ID" \
-            --groups "$GROUPS" \
+            --groups "$FIREBASE_GROUPS" \
             --release-notes-file release-notes.txt
           rm -f "$credentials"
       - name: Firebase not configured
