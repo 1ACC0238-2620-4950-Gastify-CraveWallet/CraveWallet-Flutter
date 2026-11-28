@@ -151,9 +151,12 @@ class Subscription {
 }
 
 class ExchangeRates {
-  const ExchangeRates({this.usd = 3.76, this.eur = 4.10});
+  const ExchangeRates({this.usd = 3.76, this.eur = 4.10, this.updatedAt});
   final double usd;
   final double eur;
+
+  /// When the provider published the USD rate; null for the offline default.
+  final DateTime? updatedAt;
   double rate(Currency currency) => switch (currency) {
         Currency.pen => 1,
         Currency.usd => usd,

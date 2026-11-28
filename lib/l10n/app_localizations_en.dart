@@ -645,4 +645,103 @@ class AppLocalizationsEn extends AppLocalizations {
   String conversionCycleLine(String rate, String amount) {
     return 'Rate $rate · $amount';
   }
+
+  @override
+  String get catalogButton => 'Choose from catalog';
+
+  @override
+  String get catalogTitle => 'Popular services';
+
+  @override
+  String get catalogSearchHint => 'Search a service';
+
+  @override
+  String get catalogNoResults => 'No services match your search.';
+
+  @override
+  String get editSubscription => 'Edit subscription';
+
+  @override
+  String get lockedFieldsHint =>
+      'Name, currency and frequency cannot be changed after the subscription is created.';
+
+  @override
+  String penPreview(String amount, String rate) {
+    return '≈ $amount at today\'s rate ($rate)';
+  }
+
+  @override
+  String get detailOriginalAmount => 'Original amount';
+
+  @override
+  String get detailAmountPen => 'Equivalent in soles';
+
+  @override
+  String get detailCategory => 'Category';
+
+  @override
+  String get detailNextRenewal => 'Next renewal';
+
+  @override
+  String rateUsedLine(String rate) {
+    return 'Exchange rate used: $rate';
+  }
+
+  @override
+  String rateUpdatedAt(String date) {
+    return 'Obtained on $date';
+  }
+
+  @override
+  String cancelDialogTitle(String name) {
+    return 'Cancel $name?';
+  }
+
+  @override
+  String estimatedSaving(String amount) {
+    return 'Estimated potential saving for this cycle: $amount';
+  }
+
+  @override
+  String get savingDisclaimer =>
+      'Marking it as cancelled in CraveWallet does not cancel the service with its provider and does not confirm a real saving.';
+
+  @override
+  String get confirmCancel => 'Mark as cancelled';
+
+  @override
+  String cancelledWithSaving(String amount) {
+    return 'Marked as cancelled. Potential saving: $amount.';
+  }
+
+  @override
+  String get referenceCurrencyLabel => 'Reference currency';
+
+  @override
+  String get referenceCurrencyValue => 'Peruvian sol (PEN)';
+
+  @override
+  String get referenceCurrencyHint =>
+      'The dashboard and the currency conversion use soles as their base.';
+
+  @override
+  String get referenceCurrencyConfirm => 'Confirm';
+
+  @override
+  String get referenceCurrencyConfirmed => 'Reference currency confirmed.';
+
+  @override
+  String get weeklyTrendTitle => 'Last four weeks';
+
+  @override
+  String weekOf(String date) {
+    return 'Week of $date';
+  }
+
+  @override
+  String get weeklyTrendEmpty =>
+      'Log expenses in at least two different weeks to compare them.';
+
+  @override
+  String get merchantCatalogHint => 'Pick a frequent place or type a new one';
 }

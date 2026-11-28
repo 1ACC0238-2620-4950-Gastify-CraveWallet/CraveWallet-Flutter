@@ -4,6 +4,8 @@ import 'package:material_ui/material_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_localizations_en.dart';
 import 'app_controller.dart';
+import 'catalog.dart';
+import 'insights.dart';
 import 'models.dart';
 import 'delivery_expense_dialog.dart';
 import 'premium_screen.dart';
@@ -550,7 +552,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           ...items.map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: SubscriptionTile(item: item, detailed: true),
+              child: SubscriptionTile(item: item),
             ),
           ),
       ],
@@ -558,18 +560,29 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 }
 
+/// Opens the detail of a subscription from the Dashboard or the list (US11).
+Future<void> showSubscriptionDetail(BuildContext context, Subscription item) {
+  final controller = ControllerScope.of(context);
+  return showModalBottomSheet(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (_) => SingleChildScrollView(
+      child: _SubscriptionActions(
+        item: item,
+        controller: controller,
+        hostContext: context,
+      ),
+    ),
+  );
+}
+
 class SubscriptionTile extends StatelessWidget {
-  const SubscriptionTile({
-    super.key,
-    required this.item,
-    this.detailed = false,
-  });
+  const SubscriptionTile({super.key, required this.item});
   final Subscription item;
-  final bool detailed;
   @override
   Widget build(BuildContext context) {
     final l10n = _l10nOf(context);
-    final controller = ControllerScope.of(context);
     final days = DateUtils.dateOnly(item.nextCharge)
         .difference(DateUtils.dateOnly(DateTime.now()))
         .inDays;
@@ -605,28 +618,101 @@ class SubscriptionTile extends StatelessWidget {
           '${item.currency.symbol} ${item.amount.toStringAsFixed(2)}',
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        onTap: detailed
-            ? () => showModalBottomSheet(
-                  context: context,
-                  showDragHandle: true,
-                  isScrollControlled: true,
-                  builder: (_) => SingleChildScrollView(
-                    child: _SubscriptionActions(item: item, controller: controller),
-                  ),
-                )
-            : null,
+        onTap: () => showSubscriptionDetail(context, item),
       ),
     );
   }
 }
 
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+  final String label;
+  final String value;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(label, style: const TextStyle(color: CraveColors.muted)),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
 class _SubscriptionActions extends StatelessWidget {
-  const _SubscriptionActions({required this.item, required this.controller});
+  const _SubscriptionActions({
+    required this.item,
+    required this.controller,
+    required this.hostContext,
+  });
   final Subscription item;
   final AppController controller;
+
+  /// Context that opened the sheet; still mounted after the sheet closes.
+  final BuildContext hostContext;
+
+  Future<void> _confirmCancel(BuildContext context, AppLocalizations l10n) async {
+    final saving = _formatMoney(
+      estimatedSavingPen(item, controller.rates),
+      l10n.localeName,
+    );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.cancelDialogTitle(item.name)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.estimatedSaving(saving),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(l10n.savingDisclaimer),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.backButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.confirmCancel),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    Navigator.pop(context);
+    try {
+      await controller.cancel(item);
+      if (hostContext.mounted) {
+        _message(hostContext, l10n.cancelledWithSaving(saving));
+      }
+    } catch (_) {
+      if (hostContext.mounted) _message(hostContext, controller.error!);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = _l10nOf(context);
+    final converted = item.currency != Currency.pen;
+    final rate = controller.rates.rate(item.currency);
+    final rateUpdatedAt = controller.rates.updatedAt;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -645,6 +731,41 @@ class _SubscriptionActions extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(item.notes),
+              ),
+            const SizedBox(height: 10),
+            _DetailRow(
+              label: l10n.detailOriginalAmount,
+              value:
+                  '${item.currency.symbol} ${item.amount.toStringAsFixed(2)} ${item.currency.code} · ${item.frequency.localizedLabel(l10n)}',
+            ),
+            if (converted)
+              _DetailRow(
+                label: l10n.detailAmountPen,
+                value: _formatMoney(item.amount * rate, l10n.localeName),
+              ),
+            _DetailRow(
+              label: l10n.detailCategory,
+              value: item.category.localizedLabel(l10n),
+            ),
+            _DetailRow(
+              label: l10n.detailNextRenewal,
+              value: DateFormat.yMMMd(l10n.localeName).format(item.nextCharge),
+            ),
+            if (converted)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  [
+                    l10n.rateUsedLine(rate.toStringAsFixed(3)),
+                    if (rateUpdatedAt != null)
+                      l10n.rateUpdatedAt(
+                        DateFormat.yMMMd(l10n.localeName)
+                            .add_Hm()
+                            .format(rateUpdatedAt),
+                      ),
+                  ].join(' · '),
+                  style: const TextStyle(color: CraveColors.muted),
+                ),
               ),
             if (item.currency == Currency.usd && controller.connected)
               _ExchangeRateHistoryCard(item: item, controller: controller),
@@ -669,6 +790,16 @@ class _SubscriptionActions extends StatelessWidget {
                   ? null
                   : () {
                       Navigator.pop(context);
+                      showSubscriptionForm(hostContext, existing: item);
+                    },
+              icon: const Icon(Icons.edit_outlined),
+              label: Text(l10n.editSubscription),
+            ),
+            OutlinedButton.icon(
+              onPressed: item.cancelled
+                  ? null
+                  : () {
+                      Navigator.pop(context);
                       controller.toggleUnused(item);
                     },
               icon: Icon(
@@ -683,18 +814,8 @@ class _SubscriptionActions extends StatelessWidget {
               ),
             ),
             OutlinedButton.icon(
-              onPressed: item.cancelled
-                  ? null
-                  : () async {
-                      Navigator.pop(context);
-                      try {
-                        await controller.cancel(item);
-                      } catch (_) {
-                        if (context.mounted) {
-                          _message(context, controller.error!);
-                        }
-                      }
-                    },
+              onPressed:
+                  item.cancelled ? null : () => _confirmCancel(context, l10n),
               icon: const Icon(Icons.cancel_outlined),
               label: Text(l10n.cancelSubscription),
             ),
@@ -1103,6 +1224,14 @@ class ProfileScreen extends StatelessWidget {
               ),
               const Divider(height: 1),
               ListTile(
+                leading: const Icon(Icons.currency_exchange),
+                title: Text(l10n.referenceCurrencyLabel),
+                subtitle: Text(l10n.referenceCurrencyValue),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _confirmReferenceCurrency(context, controller),
+              ),
+              const Divider(height: 1),
+              ListTile(
                 leading: const Icon(Icons.language_outlined),
                 title: Text(l10n.languageLabel),
                 trailing: DropdownButton<Locale>(
@@ -1146,6 +1275,53 @@ class ProfileScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// PEN is preselected and the user confirms it (US03).
+Future<void> _confirmReferenceCurrency(
+  BuildContext context,
+  AppController controller,
+) async {
+  final l10n = _l10nOf(context);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(l10n.referenceCurrencyLabel),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(
+              Icons.radio_button_checked,
+              color: CraveColors.primary,
+            ),
+            title: Text(l10n.referenceCurrencyValue),
+            selected: true,
+          ),
+          Text(l10n.referenceCurrencyHint),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: Text(l10n.cancelAction),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(l10n.referenceCurrencyConfirm),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+  try {
+    await controller.confirmReferenceCurrency();
+    if (context.mounted) _message(context, l10n.referenceCurrencyConfirmed);
+  } catch (_) {
+    if (context.mounted) _message(context, controller.error ?? l10n.saveFailed);
   }
 }
 
@@ -1270,7 +1446,9 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   DateTime period = DateTime(DateTime.now().year, DateTime.now().month);
   Map<String, dynamic>? summary;
   List<DeliveryExpenseRecord> expenses = const [];
+  List<WeeklyTotal> weekly = const [];
   final merchant = TextEditingController();
+  final merchantFocus = FocusNode();
   final amount = TextEditingController();
   final category = TextEditingController();
   final limit = TextEditingController();
@@ -1296,10 +1474,36 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   @override
   void dispose() {
     merchant.dispose();
+    merchantFocus.dispose();
     amount.dispose();
     category.dispose();
     limit.dispose();
     super.dispose();
+  }
+
+  /// Last four weeks up to today, or up to the end of a past month (US20).
+  Future<List<WeeklyTotal>> _weeklyTrend(
+    AppController controller,
+    List<DeliveryExpenseRecord> monthRecords,
+  ) async {
+    final now = DateTime.now();
+    final isCurrent = period.year == now.year && period.month == now.month;
+    final reference =
+        isCurrent ? now : DateTime(period.year, period.month + 1, 0);
+    final previousMonth = DateTime(period.year, period.month - 1);
+    var previous = const <DeliveryExpenseRecord>[];
+    try {
+      previous = await controller.deliveryExpenses(
+        previousMonth.year,
+        previousMonth.month,
+      );
+    } catch (_) {
+      // The trend still shows the weeks of the selected month.
+    }
+    final byId = {
+      for (final expense in [...previous, ...monthRecords]) expense.id: expense,
+    };
+    return weeklyDeliveryTotals(byId.values, reference);
   }
 
   Future<void> reload() async {
@@ -1309,10 +1513,12 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
       final data = await controller.deliverySummary(period.year, period.month);
       final records =
           await controller.deliveryExpenses(period.year, period.month);
+      final trend = await _weeklyTrend(controller, records);
       if (mounted) {
         setState(() {
           summary = data;
           expenses = records;
+          weekly = trend;
           limit.text = data['spendingLimit']?.toString() ?? '';
         });
       }
@@ -1417,6 +1623,10 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
               ),
             ),
           ),
+          if (weekly.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _WeeklyTrendCard(weeks: weekly),
+          ],
           const SizedBox(height: 16),
           TextField(
             controller: limit,
@@ -1450,9 +1660,44 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
           const SizedBox(height: 22),
           _SectionTitle(title: l10n.logExpense),
           const SizedBox(height: 10),
-          TextField(
-            controller: merchant,
-            decoration: InputDecoration(labelText: l10n.merchantLabel),
+          RawAutocomplete<String>(
+            textEditingController: merchant,
+            focusNode: merchantFocus,
+            optionsBuilder: (value) => searchMerchants(value.text),
+            fieldViewBuilder: (context, fieldController, focusNode, _) =>
+                TextField(
+              controller: fieldController,
+              focusNode: focusNode,
+              decoration: InputDecoration(
+                labelText: l10n.merchantLabel,
+                helperText: l10n.merchantCatalogHint,
+                suffixIcon: const Icon(Icons.storefront_outlined),
+              ),
+            ),
+            optionsViewBuilder: (context, onSelected, options) => Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(12),
+                child: ConstrainedBox(
+                  constraints:
+                      const BoxConstraints(maxHeight: 260, maxWidth: 360),
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    children: [
+                      for (final option in options)
+                        ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.storefront_outlined),
+                          title: Text(option),
+                          onTap: () => onSelected(option),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 10),
           TextField(
@@ -1591,177 +1836,417 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   }
 }
 
-Future<void> showAddSubscription(BuildContext context) async {
+Future<void> showAddSubscription(BuildContext context) =>
+    showSubscriptionForm(context);
+
+/// Creates a subscription, or edits the amount, date, category and notes of
+/// an existing one (US05, US06). New ones can start from the catalog (US04)
+/// and show the amount in soles before saving (US34).
+Future<void> showSubscriptionForm(
+  BuildContext context, {
+  Subscription? existing,
+}) async {
   final controller = ControllerScope.of(context);
-  if (controller.reachedFreeLimit) {
+  if (existing == null && controller.reachedFreeLimit) {
     showPremium(context);
     return;
   }
-  final name = TextEditingController();
-  final amount = TextEditingController();
-  final notes = TextEditingController();
-  var currency = Currency.pen;
-  var frequency = BillingFrequency.monthly;
-  var category = SubscriptionCategory.streaming;
-  var nextCharge = DateTime.now().add(const Duration(days: 30));
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (sheetContext) => StatefulBuilder(
-      builder: (context, setModalState) {
-        final l10n = _l10nOf(context);
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            0,
-            16,
-            MediaQuery.viewInsetsOf(context).bottom + 16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.newSubscription,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: name,
-                  decoration: InputDecoration(labelText: l10n.nameLabel),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: amount,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(labelText: l10n.amountLabel),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<Currency>(
-                  initialValue: currency,
-                  decoration: InputDecoration(labelText: l10n.currencyLabel),
-                  items: Currency.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.code),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setModalState(() => currency = value!),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<BillingFrequency>(
-                  initialValue: frequency,
-                  decoration: InputDecoration(labelText: l10n.frequencyLabel),
-                  items: BillingFrequency.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.localizedLabel(l10n)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setModalState(() => frequency = value!),
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<SubscriptionCategory>(
-                  initialValue: category,
-                  decoration: InputDecoration(labelText: l10n.categoryLabel),
-                  items: SubscriptionCategory.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.localizedLabel(l10n)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setModalState(() => category = value!),
-                ),
-                const SizedBox(height: 10),
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                  tileColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  title: Text(l10n.nextChargeLabel),
-                  subtitle: Text(
-                    DateFormat.yMd(l10n.localeName).format(nextCharge),
-                  ),
-                  trailing: const Icon(Icons.calendar_month),
-                  onTap: () async {
-                    final value = await showDatePicker(
-                      context: context,
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 3650)),
-                      initialDate: nextCharge,
-                    );
-                    if (value != null) setModalState(() => nextCharge = value);
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: notes,
-                  decoration:
-                      InputDecoration(labelText: l10n.notesOptionalLabel),
-                ),
-                const SizedBox(height: 14),
-                FilledButton(
-                  onPressed: controller.busy
-                      ? null
-                      : () async {
-                          final value = double.tryParse(
-                            amount.text.replaceAll(',', '.'),
-                          );
-                          if (name.text.trim().isEmpty ||
-                              value == null ||
-                              value <= 0) {
-                            return _message(
-                              context,
-                              l10n.invalidSubscriptionForm,
-                            );
-                          }
-                          final draft = controller.draft(
-                            name: name.text.trim(),
-                            amount: value,
-                            currency: currency,
-                            frequency: frequency,
-                            nextCharge: nextCharge,
-                            category: category,
-                            notes: notes.text.trim(),
-                          );
-                          try {
-                            await controller.saveSubscription(draft);
-                            if (sheetContext.mounted) {
-                              Navigator.pop(sheetContext);
-                            }
-                          } catch (_) {
-                            if (context.mounted) {
-                              _message(
-                                context,
-                                controller.error ?? l10n.saveFailed,
-                              );
-                            }
-                          }
-                        },
-                  child: Text(l10n.saveSubscription),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
+    builder: (_) =>
+        _SubscriptionForm(controller: controller, existing: existing),
   );
-  name.dispose();
-  amount.dispose();
-  notes.dispose();
+}
+
+class _SubscriptionForm extends StatefulWidget {
+  const _SubscriptionForm({required this.controller, this.existing});
+  final AppController controller;
+  final Subscription? existing;
+  @override
+  State<_SubscriptionForm> createState() => _SubscriptionFormState();
+}
+
+class _SubscriptionFormState extends State<_SubscriptionForm> {
+  late final name = TextEditingController(text: widget.existing?.name ?? '');
+  late final amount = TextEditingController(
+    text: widget.existing?.amount.toStringAsFixed(2) ?? '',
+  );
+  late final notes = TextEditingController(text: widget.existing?.notes ?? '');
+  late var currency = widget.existing?.currency ?? Currency.pen;
+  late var frequency = widget.existing?.frequency ?? BillingFrequency.monthly;
+  late var category =
+      widget.existing?.category ?? SubscriptionCategory.streaming;
+  late var nextCharge =
+      widget.existing?.nextCharge ??
+      DateTime.now().add(const Duration(days: 30));
+
+  bool get editing => widget.existing != null;
+
+  @override
+  void dispose() {
+    name.dispose();
+    amount.dispose();
+    notes.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10nOf(context);
+    final typed = double.tryParse(amount.text.replaceAll(',', '.'));
+    final rate = widget.controller.rates.rate(currency);
+    final today = DateUtils.dateOnly(DateTime.now());
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        MediaQuery.viewInsetsOf(context).bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              editing ? l10n.editSubscription : l10n.newSubscription,
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 14),
+            if (editing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  l10n.lockedFieldsHint,
+                  style: const TextStyle(color: CraveColors.muted),
+                ),
+              )
+            else ...[
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showCatalogPicker(context);
+                  if (picked == null) return;
+                  setState(() {
+                    name.text = picked.name;
+                    currency = picked.currency;
+                    category = picked.category;
+                  });
+                },
+                icon: const Icon(Icons.apps_outlined),
+                label: Text(l10n.catalogButton),
+              ),
+              const SizedBox(height: 10),
+            ],
+            TextField(
+              controller: name,
+              enabled: !editing,
+              decoration: InputDecoration(labelText: l10n.nameLabel),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: amount,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(labelText: l10n.amountLabel),
+            ),
+            if (currency != Currency.pen && typed != null && typed > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Text(
+                  l10n.penPreview(
+                    _formatMoney(typed * rate, l10n.localeName),
+                    rate.toStringAsFixed(3),
+                  ),
+                  key: const Key('penPreview'),
+                  style: const TextStyle(
+                    color: CraveColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<Currency>(
+              key: ValueKey('currency-$currency'),
+              initialValue: currency,
+              decoration: InputDecoration(labelText: l10n.currencyLabel),
+              items: Currency.values
+                  .map(
+                    (value) =>
+                        DropdownMenuItem(value: value, child: Text(value.code)),
+                  )
+                  .toList(),
+              onChanged: editing
+                  ? null
+                  : (value) => setState(() => currency = value!),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<BillingFrequency>(
+              initialValue: frequency,
+              decoration: InputDecoration(labelText: l10n.frequencyLabel),
+              items: BillingFrequency.values
+                  .map(
+                    (value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(value.localizedLabel(l10n)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: editing
+                  ? null
+                  : (value) => setState(() => frequency = value!),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<SubscriptionCategory>(
+              key: ValueKey('category-$category'),
+              initialValue: category,
+              decoration: InputDecoration(labelText: l10n.categoryLabel),
+              items: SubscriptionCategory.values
+                  .map(
+                    (value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(value.localizedLabel(l10n)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() => category = value!),
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              tileColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              title: Text(l10n.nextChargeLabel),
+              subtitle: Text(
+                DateFormat.yMd(l10n.localeName).format(nextCharge),
+              ),
+              trailing: const Icon(Icons.calendar_month),
+              onTap: () async {
+                final first = nextCharge.isBefore(today) ? nextCharge : today;
+                final value = await showDatePicker(
+                  context: context,
+                  firstDate: first,
+                  lastDate: today.add(const Duration(days: 3650)),
+                  initialDate: nextCharge,
+                );
+                if (value != null) setState(() => nextCharge = value);
+              },
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: notes,
+              decoration: InputDecoration(labelText: l10n.notesOptionalLabel),
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              onPressed: widget.controller.busy
+                  ? null
+                  : () async {
+                      final value = double.tryParse(
+                        amount.text.replaceAll(',', '.'),
+                      );
+                      if (name.text.trim().isEmpty ||
+                          value == null ||
+                          value <= 0) {
+                        return _message(context, l10n.invalidSubscriptionForm);
+                      }
+                      final draft = widget.existing == null
+                          ? widget.controller.draft(
+                              name: name.text.trim(),
+                              amount: value,
+                              currency: currency,
+                              frequency: frequency,
+                              nextCharge: nextCharge,
+                              category: category,
+                              notes: notes.text.trim(),
+                            )
+                          : widget.existing!.copyWith(
+                              amount: value,
+                              nextCharge: nextCharge,
+                              category: category,
+                              notes: notes.text.trim(),
+                            );
+                      try {
+                        await widget.controller.saveSubscription(draft);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      } catch (_) {
+                        if (context.mounted) {
+                          _message(
+                            context,
+                            widget.controller.error ?? l10n.saveFailed,
+                          );
+                        }
+                      }
+                    },
+              child: Text(editing ? l10n.saveChanges : l10n.saveSubscription),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Searchable list of frequent services (US04).
+Future<CatalogService?> showCatalogPicker(BuildContext context) =>
+    showModalBottomSheet<CatalogService>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => const _CatalogPicker(),
+    );
+
+class _CatalogPicker extends StatefulWidget {
+  const _CatalogPicker();
+  @override
+  State<_CatalogPicker> createState() => _CatalogPickerState();
+}
+
+class _CatalogPickerState extends State<_CatalogPicker> {
+  String query = '';
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10nOf(context);
+    final results = searchCatalog(query);
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * .75,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Text(
+                l10n.catalogTitle,
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                onChanged: (value) => setState(() => query = value),
+                decoration: InputDecoration(
+                  hintText: l10n.catalogSearchHint,
+                  prefixIcon: const Icon(Icons.search),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: results.isEmpty
+                  ? Center(child: Text(l10n.catalogNoResults))
+                  : ListView.builder(
+                      itemCount: results.length,
+                      itemBuilder: (context, index) {
+                        final service = results[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Color(service.color),
+                            child: Text(
+                              service.initials,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          title: Text(service.name),
+                          subtitle: Text(
+                            '${service.currency.code} · ${service.category.localizedLabel(l10n)}',
+                          ),
+                          onTap: () => Navigator.pop(context, service),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Delivery spending of the last four weeks (US20).
+class _WeeklyTrendCard extends StatelessWidget {
+  const _WeeklyTrendCard({required this.weeks});
+  final List<WeeklyTotal> weeks;
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10nOf(context);
+    final highest = weeks.fold<double>(
+      0,
+      (max, week) => week.total > max ? week.total : max,
+    );
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.weeklyTrendTitle,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            for (final week in weeks)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Text(
+                        l10n.weekOf(
+                          DateFormat(
+                            'd MMM',
+                            l10n.localeName,
+                          ).format(week.weekStart),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: LinearProgressIndicator(
+                        value: highest == 0 ? 0 : week.total / highest,
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        _formatMoney(week.total, l10n.localeName),
+                        textAlign: TextAlign.end,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (!hasWeeklyComparison(weeks))
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  l10n.weeklyTrendEmpty,
+                  style: const TextStyle(color: CraveColors.muted),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _SectionTitle extends StatelessWidget {

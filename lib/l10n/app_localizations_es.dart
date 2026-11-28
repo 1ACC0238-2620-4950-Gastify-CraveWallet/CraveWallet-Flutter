@@ -649,4 +649,104 @@ class AppLocalizationsEs extends AppLocalizations {
   String conversionCycleLine(String rate, String amount) {
     return 'Tipo de cambio $rate · $amount';
   }
+
+  @override
+  String get catalogButton => 'Elegir del catálogo';
+
+  @override
+  String get catalogTitle => 'Servicios frecuentes';
+
+  @override
+  String get catalogSearchHint => 'Buscar un servicio';
+
+  @override
+  String get catalogNoResults => 'Ningún servicio coincide con tu búsqueda.';
+
+  @override
+  String get editSubscription => 'Editar suscripción';
+
+  @override
+  String get lockedFieldsHint =>
+      'El nombre, la moneda y la frecuencia no se pueden cambiar después de crear la suscripción.';
+
+  @override
+  String penPreview(String amount, String rate) {
+    return '≈ $amount con el tipo de cambio de hoy ($rate)';
+  }
+
+  @override
+  String get detailOriginalAmount => 'Monto original';
+
+  @override
+  String get detailAmountPen => 'Equivalente en soles';
+
+  @override
+  String get detailCategory => 'Categoría';
+
+  @override
+  String get detailNextRenewal => 'Próxima renovación';
+
+  @override
+  String rateUsedLine(String rate) {
+    return 'Tipo de cambio aplicado: $rate';
+  }
+
+  @override
+  String rateUpdatedAt(String date) {
+    return 'Obtenido el $date';
+  }
+
+  @override
+  String cancelDialogTitle(String name) {
+    return '¿Cancelar $name?';
+  }
+
+  @override
+  String estimatedSaving(String amount) {
+    return 'Ahorro potencial estimado para este ciclo: $amount';
+  }
+
+  @override
+  String get savingDisclaimer =>
+      'Marcarla como cancelada en CraveWallet no cancela el servicio con su proveedor ni confirma un ahorro real.';
+
+  @override
+  String get confirmCancel => 'Marcar como cancelada';
+
+  @override
+  String cancelledWithSaving(String amount) {
+    return 'Marcada como cancelada. Ahorro potencial: $amount.';
+  }
+
+  @override
+  String get referenceCurrencyLabel => 'Moneda de referencia';
+
+  @override
+  String get referenceCurrencyValue => 'Sol peruano (PEN)';
+
+  @override
+  String get referenceCurrencyHint =>
+      'El Dashboard y la conversión de divisas usan el sol como base.';
+
+  @override
+  String get referenceCurrencyConfirm => 'Confirmar';
+
+  @override
+  String get referenceCurrencyConfirmed => 'Moneda de referencia confirmada.';
+
+  @override
+  String get weeklyTrendTitle => 'Últimas cuatro semanas';
+
+  @override
+  String weekOf(String date) {
+    return 'Semana del $date';
+  }
+
+  @override
+  String get weeklyTrendEmpty =>
+      'Registra gastos en al menos dos semanas distintas para compararlas.';
+
+  @override
+  String get merchantCatalogHint =>
+      'Elige un comercio frecuente o escribe uno nuevo';
 }
