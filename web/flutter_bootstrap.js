@@ -7,6 +7,8 @@
 _flutter.loader.load({
   config: {
     // Use the local CanvasKit bundle instead of the CDN to reduce test flakiness.
-    canvasKitBaseUrl: "/canvaskit/",
+    // Relative, so it follows <base href> (GitHub Pages serves the app under
+    // /CraveWallet-Flutter/; Render serves it at /).
+    canvasKitBaseUrl: "canvaskit/",
   },
 });
