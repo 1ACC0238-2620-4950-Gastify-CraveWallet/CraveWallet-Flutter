@@ -1243,6 +1243,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rate {rate} · {amount}'**
   String conversionCycleLine(String rate, String amount);
+
+  /// No description provided for @catalogButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from catalog'**
+  String get catalogButton;
+
+  /// No description provided for @catalogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular services'**
+  String get catalogTitle;
+
+  /// No description provided for @catalogSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search a service'**
+  String get catalogSearchHint;
+
+  /// No description provided for @catalogNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No services match your search.'**
+  String get catalogNoResults;
+
+  /// No description provided for @editSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit subscription'**
+  String get editSubscription;
+
+  /// No description provided for @lockedFieldsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name, currency and frequency cannot be changed after the subscription is created.'**
+  String get lockedFieldsHint;
+
+  /// No description provided for @penPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {amount} at today\'s rate ({rate})'**
+  String penPreview(String amount, String rate);
+
+  /// No description provided for @detailOriginalAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Original amount'**
+  String get detailOriginalAmount;
+
+  /// No description provided for @detailAmountPen.
+  ///
+  /// In en, this message translates to:
+  /// **'Equivalent in soles'**
+  String get detailAmountPen;
+
+  /// No description provided for @detailCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get detailCategory;
+
+  /// No description provided for @detailNextRenewal.
+  ///
+  /// In en, this message translates to:
+  /// **'Next renewal'**
+  String get detailNextRenewal;
+
+  /// No description provided for @rateUsedLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate used: {rate}'**
+  String rateUsedLine(String rate);
+
+  /// No description provided for @rateUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Obtained on {date}'**
+  String rateUpdatedAt(String date);
+
+  /// No description provided for @cancelDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel {name}?'**
+  String cancelDialogTitle(String name);
+
+  /// No description provided for @estimatedSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated potential saving for this cycle: {amount}'**
+  String estimatedSaving(String amount);
+
+  /// No description provided for @savingDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Marking it as cancelled in CraveWallet does not cancel the service with its provider and does not confirm a real saving.'**
+  String get savingDisclaimer;
+
+  /// No description provided for @confirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as cancelled'**
+  String get confirmCancel;
+
+  /// No description provided for @cancelledWithSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked as cancelled. Potential saving: {amount}.'**
+  String cancelledWithSaving(String amount);
+
+  /// No description provided for @referenceCurrencyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference currency'**
+  String get referenceCurrencyLabel;
+
+  /// No description provided for @referenceCurrencyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Peruvian sol (PEN)'**
+  String get referenceCurrencyValue;
+
+  /// No description provided for @referenceCurrencyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The dashboard and the currency conversion use soles as their base.'**
+  String get referenceCurrencyHint;
+
+  /// No description provided for @referenceCurrencyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get referenceCurrencyConfirm;
+
+  /// No description provided for @referenceCurrencyConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference currency confirmed.'**
+  String get referenceCurrencyConfirmed;
+
+  /// No description provided for @weeklyTrendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last four weeks'**
+  String get weeklyTrendTitle;
+
+  /// No description provided for @weekOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Week of {date}'**
+  String weekOf(String date);
+
+  /// No description provided for @weeklyTrendEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Log expenses in at least two different weeks to compare them.'**
+  String get weeklyTrendEmpty;
+
+  /// No description provided for @merchantCatalogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a frequent place or type a new one'**
+  String get merchantCatalogHint;
 }
 
 class _AppLocalizationsDelegate

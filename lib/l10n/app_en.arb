@@ -338,5 +338,84 @@
         "type": "String"
       }
     }
-  }
+  },
+  "catalogButton": "Choose from catalog",
+  "catalogTitle": "Popular services",
+  "catalogSearchHint": "Search a service",
+  "catalogNoResults": "No services match your search.",
+  "editSubscription": "Edit subscription",
+  "lockedFieldsHint": "Name, currency and frequency cannot be changed after the subscription is created.",
+  "penPreview": "≈ {amount} at today's rate ({rate})",
+  "@penPreview": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "detailOriginalAmount": "Original amount",
+  "detailAmountPen": "Equivalent in soles",
+  "detailCategory": "Category",
+  "detailNextRenewal": "Next renewal",
+  "rateUsedLine": "Exchange rate used: {rate}",
+  "@rateUsedLine": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "rateUpdatedAt": "Obtained on {date}",
+  "@rateUpdatedAt": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelDialogTitle": "Cancel {name}?",
+  "@cancelDialogTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "estimatedSaving": "Estimated potential saving for this cycle: {amount}",
+  "@estimatedSaving": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "savingDisclaimer": "Marking it as cancelled in CraveWallet does not cancel the service with its provider and does not confirm a real saving.",
+  "confirmCancel": "Mark as cancelled",
+  "cancelledWithSaving": "Marked as cancelled. Potential saving: {amount}.",
+  "@cancelledWithSaving": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "referenceCurrencyLabel": "Reference currency",
+  "referenceCurrencyValue": "Peruvian sol (PEN)",
+  "referenceCurrencyHint": "The dashboard and the currency conversion use soles as their base.",
+  "referenceCurrencyConfirm": "Confirm",
+  "referenceCurrencyConfirmed": "Reference currency confirmed.",
+  "weeklyTrendTitle": "Last four weeks",
+  "weekOf": "Week of {date}",
+  "@weekOf": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "weeklyTrendEmpty": "Log expenses in at least two different weeks to compare them.",
+  "merchantCatalogHint": "Pick a frequent place or type a new one"
 }

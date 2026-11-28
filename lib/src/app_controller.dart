@@ -25,6 +25,9 @@ class AppController extends ChangeNotifier {
   ExchangeRates rates = const ExchangeRates();
   List<Subscription> subscriptions = const [];
   double? serverMonthlyTotal;
+
+  /// Reference currency stored in the user profile (US03). Only PEN exists.
+  String referenceCurrency = 'PEN';
   bool busy = false;
   String? error;
   PremiumStatus? premiumStatus;
@@ -223,8 +226,12 @@ class AppController extends ChangeNotifier {
     }
     final quote = activeBody['exchangeRate'] as Map?;
     if (quote != null) {
-      rates = ExchangeRates(usd: (quote['rate'] as num).toDouble());
+      rates = ExchangeRates(
+        usd: (quote['rate'] as num).toDouble(),
+        updatedAt: DateTime.tryParse('${quote['updatedAt']}')?.toLocal(),
+      );
     }
+    referenceCurrency = '${me['referenceCurrency'] ?? 'PEN'}';
     profile = UserProfile(
       name: _nameFromEmail('${me['email']}'),
       email: '${me['email']}',
@@ -392,6 +399,22 @@ class AppController extends ChangeNotifier {
         category: category,
         notes: notes,
       );
+
+  /// Confirms PEN as the reference currency of the profile (US03).
+  Future<void> confirmReferenceCurrency() async {
+    await _guard(() async {
+      if (connected) {
+        final profile = await api.request(
+          'PATCH',
+          '/api/v1/users/me',
+          body: {'referenceCurrency': 'PEN'},
+        );
+        referenceCurrency = '${profile['referenceCurrency'] ?? 'PEN'}';
+      } else {
+        referenceCurrency = 'PEN';
+      }
+    });
+  }
 
   Future<void> cancel(Subscription item) async {
     await _guard(() async {
